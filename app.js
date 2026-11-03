@@ -150,7 +150,7 @@ function renderToday(){
   const pc=ev.last?Math.round(ev.last.fc/VIS*100):0, td=todayDay(), doneTonight=S.entries.some(e=>e.day===td);
   $('tonightCard').innerHTML=doneTonight
    ?`<div class="row between"><h2>Tonight's check-in</h2><span class="pill ok">Done</span></div><p class="small muted">Day ${td} is saved. Next photo tomorrow night.</p><button class="ghost" data-act="check">Retake tonight's photo</button>`
-   :`<div class="row between"><h2>Tonight's check-in</h2><span class="tiny muted">Day ${td}</span></div><p class="small muted">About 40 seconds. Lights off, color sticker next to the treated area, flash on.</p><button data-act="check">Start check-in</button>`;
+   :`<div class="row between"><h2>Tonight's check-in</h2><span class="tiny muted">Day ${td}</span></div><p class="small muted">About 40 seconds. Lights off, flash on.</p><button data-act="check">Start check-in</button>`;
   $('tonightCard').querySelector('[data-act]').onclick=()=>go('check');
   $('statusCard').innerHTML=`<div class="row between"><h2>Healing so far</h2><span class="pill ${st.cls}">${st.txt}</span></div>
    <div class="kv"><div><b>Redness (Δa*)</b><span>${ev.last?ev.last.dR.toFixed(1):'–'}</span></div>
@@ -170,7 +170,7 @@ let img=null, taps=[], wb=null, picked=new Set();
 function prepCheck(){ const d=Math.min(56,todayDay()); $('ciDay').value=d; $('ciTitle').textContent=`Tonight's check-in · Day ${d}`; stepState(); }
 function stepState(){const n=img?2+taps.length:1;document.querySelectorAll('#ciSteps .step').forEach(s=>{const k=+s.dataset.s;s.className='step '+(k<n?'done':k===n?'on':'');});
   $('saveCheck').disabled=!(img&&taps.length>=2);
-  $('tapHint').textContent=!img?'':taps.length===0?'Tap the treated area.':taps.length===1?'Now tap untreated skin.':taps.length===2?'Optional: tap the gray sticker.':'Color corrected.';}
+  $('tapHint').textContent=!img?'':taps.length===0?'Tap the treated area.':taps.length===1?'Now tap untreated skin.':'Done. Save below.';}
 $('cam').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const u=URL.createObjectURL(file);const im=new Image();
   im.onload=()=>{img=im;taps=[];wb=null;const c=$('photo');const s=Math.min(1,1200/Math.max(im.width,im.height));c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
     c.hidden=false;$('tapRow').hidden=false;$('camBtn').textContent='Retake photo';paint();stepState();URL.revokeObjectURL(u);};im.src=u;});
@@ -185,9 +185,9 @@ function measure(){if(taps.length<2){$('measure').hidden=true;return;}
   const t=lab(...cor(s[0])),u=lab(...cor(s[1]));
   const dR=t.a-u.a, dB=ita(u)-ita(t);
   $('measure').hidden=false;
-  $('measure').innerHTML=`<div><b>Redness Δa*</b><span>${dR.toFixed(1)}</span></div><div><b>Brown ΔITA°</b><span>${dB.toFixed(1)}</span></div><div><b>Color fix</b><span>${wb?'sticker':'none'}</span></div>`;
+  $('measure').innerHTML=`<div><b>Redness Δa*</b><span>${dR.toFixed(1)}</span></div><div><b>Brown ΔITA°</b><span>${dB.toFixed(1)}</span></div>`;
   $('measure').dataset.r=dR;$('measure').dataset.b=dB;}
-$('photo').addEventListener('click',e=>{if(!img||taps.length>=3)return;const c=$('photo'),b=c.getBoundingClientRect();
+$('photo').addEventListener('click',e=>{if(!img||taps.length>=2)return;const c=$('photo'),b=c.getBoundingClientRect();
   taps.push({x:(e.clientX-b.left)*c.width/b.width,y:(e.clientY-b.top)*c.height/b.height,r:Math.max(8,c.width/60)});paint();stepState();});
 $('retap').addEventListener('click',()=>{taps=[];paint();stepState();});
 document.querySelectorAll('#taps .chip').forEach(ch=>ch.addEventListener('click',()=>{const t=ch.dataset.t;picked.has(t)?picked.delete(t):picked.add(t);ch.setAttribute('aria-pressed',String(picked.has(t)));}));

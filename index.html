@@ -130,9 +130,8 @@ details summary{cursor:pointer}
       <p class="small muted">Same light every night is what makes the numbers comparable.</p>
       <div class="steps">
         <div class="step on"><i>1</i><span>Turn off the lights.</span></div>
-        <div class="step on"><i>2</i><span>Put the gray color sticker next to the treated area.</span></div>
-        <div class="step on"><i>3</i><span>Flash on. Hold the phone about 30 cm away, same angle each night.</span></div>
-        <div class="step on"><i>4</i><span>Tap the treated spot, then normal skin next to it. That's it.</span></div>
+        <div class="step on"><i>2</i><span>Flash on. Hold the phone about 30 cm away, same angle each night.</span></div>
+        <div class="step on"><i>3</i><span>Tap the treated spot, then normal skin next to it. That's it.</span></div>
       </div>
       <p class="tiny muted">Photos stay on this phone. Only the numbers are saved.</p>
     </div>
@@ -152,16 +151,15 @@ details summary{cursor:pointer}
     <div class="card">
       <div class="row between"><h2 id="ciTitle">Tonight's check-in</h2><span class="tiny muted">Photos stay on this phone. Only the numbers are saved.</span></div>
       <div class="steps" id="ciSteps">
-        <div class="step" data-s="1"><i>1</i><span>Turn off the lights and take a photo with the flash. Keep the color sticker in frame.</span></div>
+        <div class="step" data-s="1"><i>1</i><span>Turn off the lights and take a photo with the flash.</span></div>
         <div class="step" data-s="2"><i>2</i><span>Tap the treated area.</span></div>
         <div class="step" data-s="3"><i>3</i><span>Tap untreated skin nearby (same light).</span></div>
-        <div class="step" data-s="4"><i>4</i><span>Optional: tap the gray sticker to correct the camera color.</span></div>
       </div>
       <label class="btn" for="cam" id="camBtn">Take or choose photo</label>
       <input id="cam" type="file" accept="image/*" capture="user" hidden>
       <canvas class="photo" id="photo" hidden></canvas>
       <div class="row" id="tapRow" hidden><button class="small ghost" id="retap">Re-tap spots</button><span class="small muted" id="tapHint"></span></div>
-      <div class="kv" id="measure" hidden></div>
+      <div class="kv" id="measure" hidden style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
     </div>
     <div class="card">
       <h3>Anything today?</h3>
@@ -227,6 +225,6 @@ details summary{cursor:pointer}
   <button data-go="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Progress</button>
   <button data-go="clinic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Clinic</button>
 </div></nav>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
