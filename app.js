@@ -70,7 +70,7 @@ function verdict(from,to){const ch=(to-from)/Math.max(from,0.1);return ch<=-0.1?
 function evaluate(st){
   const r=st.record, P=course(r), kn=known(r), tau0=P.Rdays/3.2, tauK=tau0*(1+0.35*(kn-1));
   const pr=st.proto||PROTO, E=[...st.entries].sort((a,b)=>a.day-b.day);
-  let hHat=1,tier=0,maxTier=0,mult=1,re=null,flag=null,sun=false,pick=false,fcStart=null;
+  let hHat=1,tier=0,maxTier=0,mult=1,lastChange=0,lastV=null,done=false,flag=null,sun=false,pick=false;
   const active={}, worked={}, log=[], pts=[];
   const L=(d,k,t)=>log.push({d,k,t});
   const start=(d,name,fc)=>{ if(active[name])return; active[name]={from:d,fc};
@@ -93,23 +93,25 @@ function evaluate(st){
     if(e.taps.includes('sun'))start(d,'sun',fc);
     if(d<3)continue;
     if(tier===0&&fc>=VIS*FLAG){
-      tier=1;maxTier=Math.max(maxTier,1);mult=MULT[1];flag=d;re=d+3;fcStart=fc;
+      tier=1;maxTier=Math.max(maxTier,1);mult=MULT[1];flag=d;lastChange=d;
       const why=[redSlow&&'redness is fading slower than the normal course',brownUp&&'brown is above the normal band'].filter(Boolean);
       L(d,'interpret',`${crust?'Crust window, so brown is ignored. ':''}${why.length?why.join(' and ').replace(/^./,c=>c.toUpperCase())+'. ':'Early redness and the clinic record (skin type, settings) put this patient at risk. '}Learned response ${hHat.toFixed(2)}× the record. Forecast pigment peak ${pc}% of the visible line.`);
       if(redSlow||crust)start(d,'redness',fc); if(brownUp||!crust)start(d,'brown',fc);
     }else if(tier>0){
       if(redSlow)start(d,'redness',fc); if(brownUp)start(d,'brown',fc);
-      if(re!=null&&d>=re){
-        const v=verdict(fcStart,fc), names=Object.keys(active).filter(n=>active[n].from>=re-3&&active[n].from<d);
+      // daily check: judge on the trend over the last ~2 days, and give a new step at least 2 days
+      const prev=[...pts].reverse().find(q=>q.d<=d-2);
+      if(prev&&d-lastChange>=2&&!done){
+        const v=verdict(prev.fc,fc), names=Object.keys(active).filter(n=>active[n].from>lastChange-1&&active[n].from<d);
         names.forEach(n=>worked[n]=v);
-        L(d,'adapt',`72 h check: forecast ${Math.round(fcStart/VIS*100)}% → ${pc}%. ${v}.`);
+        let msg=`Daily check (last 2 days): forecast ${Math.round(prev.fc/VIS*100)}% → ${pc}%. ${v}.`;
         if(fc>=VIS*FLAG&&v!=='Working'&&tier<3){
-          tier++;maxTier=Math.max(maxTier,tier);mult=MULT[maxTier];
+          tier++;maxTier=Math.max(maxTier,tier);mult=MULT[maxTier];lastChange=d;L(d,'adapt',msg+' Step up.');
           L(d,'intervene',tier===2?`Clinic alerted. ${pr.clinic}${pr.hold==='hold'?' Next session on hold until brown is back in the normal band.':''}`:`Clinician step. ${pr.doctor}`);
-        }else if(fc<VIS*0.6&&tier>1){tier--;L(d,'adapt',`Back toward the normal course. Step down to step ${tier}.`);}
-        else if(v==='Working')L(d,'adapt','Keep the current steps.');
-        fcStart=fc; re=(fc<VIS*0.5&&tier===1)?null:d+3;
-        if(re==null)L(d,'adapt','Forecast is well under the line. Daily checks continue, steps end.');
+        }else if(fc<VIS*0.6&&tier>1){tier--;lastChange=d;L(d,'adapt',msg+` Back toward the normal course. Step down to step ${tier}.`);}
+        else if(fc<VIS*0.5&&tier===1){done=true;L(d,'adapt',msg+' Forecast is well under the line. Steps end; daily photos continue.');}
+        else if(v!==lastV){L(d,'adapt',msg+(v==='Working'?' Keep the current steps.':' Watching.'));}
+        lastV=v;
       }
     }
   }
@@ -233,7 +235,7 @@ function renderAlert(){const ev=evaluate(S),st=status(ev);
   const w=Object.keys(ev.worked).map(k=>`<div class="step"><i>·</i><span>${WHY[k]} → <span class="pill ${ev.worked[k]==='Working'?'ok':ev.worked[k]==='Mixed'?'watch':'crit'}">${ev.worked[k]}</span></span></div>`).join('');
   const slow=ev.hHat;
   $('alertCard').innerHTML=`<div class="row between"><h2>Patient alert</h2><span class="pill ${st.cls}">${st.txt}</span></div>
-  <p class="small">${ev.tier>=2?`Forecast pigment is still high after home steps. Bring the visit forward (scheduled day ${ev.visit}).`:ev.tier===1?'Home steps are active. The app re-checks every 72 hours.':'No action needed.'}</p>
+  <p class="small">${ev.tier>=2?`Forecast pigment is still high after home steps. Bring the visit forward (scheduled day ${ev.visit}).`:ev.tier===1?'Home steps are active. The app checks the trend every day.':'No action needed.'}</p>
   ${w?`<h3>What worked for this patient</h3><div class="steps">${w}</div>`:''}
   <h3>Next session</h3>
   <p class="small">${ev.flag==null?'Can go ahead as planned.':(ev.onHold?(S.proto.hold==='hold'?'<b>On hold</b> until brown is back in the normal band.':'<b>Advise waiting</b> until brown is back in the normal band.'):'Brown is back in the normal band. Can go ahead.')}
