@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d5c6e">
+<title>PIH Guard</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:"Pretendard";src:url("fonts/Pretendard-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Pretendard";src:url("fonts/Pretendard-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Pretendard";src:url("fonts/Pretendard-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+:root{--bg:#f3f5f5;--surface:#fff;--ink:#1b2326;--muted:#62707a;--line:#dde2e5;--soft:#eef1f2;--band:#e2e8ea;
+--accent:#1d5c6e;--red:#c2455a;--brown:#8b5a3a;--ok:#2f7d55;--warn:#b06d12;--crit:#b23a48;
+--sans:"Pretendard",-apple-system,"Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#111618;--surface:#1a2124;--ink:#e6ebed;--muted:#93a1a9;--line:#2c363a;--soft:#20292c;--band:#28333a;
+--accent:#6fb3c6;--red:#e27586;--brown:#c99470;--ok:#6cc095;--warn:#e0a24a;--crit:#e57a86;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 14px) max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 86px) max(16px,env(safe-area-inset-left))}
+header.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+header.top .brand{font-weight:700;font-size:1.15rem;letter-spacing:-.01em;display:flex;gap:8px;align-items:center}
+header.top .who{font-size:.8rem;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+h2{font-size:1.05rem;margin:0}
+h3{font-size:.9rem;margin:0}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:.85rem} .tiny{font-size:.75rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pill.watch{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.pill.crit{background:color-mix(in srgb,var(--crit) 18%,transparent);color:var(--crit)}
+.pill.crust{background:var(--soft);color:var(--muted)}
+.big{font-size:1.6rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kv div{background:var(--soft);border-radius:10px;padding:8px 10px}
+.kv b{display:block;font-size:.7rem;color:var(--muted);font-weight:600}
+.kv span{font-weight:700;font-variant-numeric:tabular-nums}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 14px;background:var(--accent);color:#fff;cursor:pointer;text-align:center}
+button.ghost{background:var(--soft);color:var(--ink)}
+button.small{padding:7px 10px;font-size:.82rem;border-radius:9px}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;font-size:.9rem}
+.step i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:700;background:var(--soft);color:var(--muted)}
+.step.on i{background:var(--accent);color:#fff}
+.step.done i{background:var(--ok);color:#fff}
+canvas.photo{width:100%;border-radius:12px;background:#000;touch-action:manipulation;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:.85rem;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 12px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--muted);min-width:0}
+select,input,textarea{font:inherit;font-size:.92rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid2 .full{grid-column:1/-1}
+svg text{font-family:var(--sans)}
+.log{display:flex;flex-direction:column}
+.log div{display:grid;grid-template-columns:48px 76px 1fr;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:.85rem}
+.log .d{color:var(--muted);font-variant-numeric:tabular-nums}
+.log .k{font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:2px}
+.k.sense{color:#3a68ad}.k.interpret{color:var(--warn)}.k.intervene{color:var(--red)}.k.adapt{color:var(--ok)}
+@media (prefers-color-scheme:dark){.k.sense{color:#7fa4e0}}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;width:100%}
+nav.tabs button{background:none;color:var(--muted);border-radius:0;padding:10px 4px 12px;font-size:.74rem;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;z-index:9}
+.note{font-size:.78rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
+.alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><img src="icon.svg" width="26" height="26" alt="">PIH Guard</div>
+    <div class="who" id="who"></div>
+  </header>
+
+  <!-- TODAY -->
+  <section id="v-today" data-view>
+    <div class="card" id="statusCard"></div>
+    <div class="card" id="doCard"></div>
+    <div class="card">
+      <h2>Tonight's check-in</h2>
+      <p class="small muted">About 40 seconds. Lights off, color sticker on your jaw, flash on.</p>
+      <button id="goCheck">Start check-in</button>
+    </div>
+  </section>
+
+  <!-- CHECK-IN -->
+  <section id="v-check" data-view hidden>
+    <div class="card">
+      <div class="row between"><h2>Check-in</h2><span class="tiny muted">Photos stay on this phone. Only the numbers are saved.</span></div>
+      <div class="steps" id="ciSteps">
+        <div class="step" data-s="1"><i>1</i><span>Turn off the lights and take a photo with the flash. Keep the color sticker in frame.</span></div>
+        <div class="step" data-s="2"><i>2</i><span>Tap the treated area.</span></div>
+        <div class="step" data-s="3"><i>3</i><span>Tap untreated skin nearby (same light).</span></div>
+        <div class="step" data-s="4"><i>4</i><span>Optional: tap the gray sticker to correct the camera color.</span></div>
+      </div>
+      <label class="btn" for="cam" id="camBtn">Take or choose photo</label>
+      <input id="cam" type="file" accept="image/*" capture="user" hidden>
+      <canvas class="photo" id="photo" hidden></canvas>
+      <div class="row" id="tapRow" hidden><button class="small ghost" id="retap">Re-tap spots</button><span class="small muted" id="tapHint"></span></div>
+      <div class="kv" id="measure" hidden></div>
+    </div>
+    <div class="card">
+      <h3>Anything today?</h3>
+      <div class="chips" id="taps">
+        <button class="chip" data-t="sting" aria-pressed="false">Stinging</button>
+        <button class="chip" data-t="itch" aria-pressed="false">Itchy</button>
+        <button class="chip" data-t="pick" aria-pressed="false">Picked a crust</button>
+        <button class="chip" data-t="sunscreen" aria-pressed="false">Reapplied sunscreen</button>
+        <button class="chip" data-t="sun" aria-pressed="false">Long time in the sun</button>
+      </div>
+      <label class="f">Day after the procedure<input id="ciDay" type="number" min="0" max="56"></label>
+      <button id="saveCheck" disabled>Save tonight's check-in</button>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="v-progress" data-view hidden>
+    <div class="card">
+      <div class="row between"><h2>Healing course</h2><span class="tiny muted" id="progSub"></span></div>
+      <svg id="chart" viewBox="0 0 520 430" width="100%" role="img" aria-label="Redness and brown readings against the normal course"></svg>
+      <div class="row tiny muted" style="gap:14px">
+        <span><svg width="18" height="8"><rect width="18" height="8" fill="var(--band)"/></svg> Normal course</span>
+        <span><svg width="18" height="8"><rect width="18" height="8" fill="var(--line)"/></svg> Crust window</span>
+        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="var(--brown)" stroke-dasharray="2 3"/></svg> Visible to the eye</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>What the loop did</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+
+  <!-- CLINIC -->
+  <section id="v-clinic" data-view hidden>
+    <div class="card" id="alertCard"></div>
+    <div class="card">
+      <div class="row between"><h2>Procedure record</h2><span class="tiny muted">Clinic only. Not shown to the patient.</span></div>
+      <div class="grid2">
+        <label class="f full">Procedure<select id="r-proc">
+          <option value="co2">Fractional CO2 laser</option><option value="rf">RF microneedling</option><option value="peel">Chemical peel</option>
+          <option value="mole">Mole / wart / SK removal</option><option value="pigment">Pigment treatment</option><option value="other">Other procedure</option></select></label>
+        <label class="f full" id="dxWrap">Diagnosis<select id="r-dx">
+          <option value="melasma">Melasma</option><option value="freckle">Freckles (ephelides)</option><option value="lentigo">Solar lentigo</option>
+          <option value="adm">ADM (Hori's nevus)</option><option value="cal">Café-au-lait macule</option><option value="pih">Existing PIH (e.g. acne marks)</option><option value="other">Other pigment</option></select></label>
+        <label class="f">Device<input id="r-device"></label>
+        <label class="f">Wavelength<input id="r-wave"></label>
+        <label class="f">Settings<input id="r-set"></label>
+        <label class="f">Spot size<input id="r-spot"></label>
+        <label class="f">Immediate skin response<select id="r-end"><option value="0">As intended</option><option value="1">Stronger than intended</option></select></label>
+        <label class="f">Skin type (Fitzpatrick)<select id="r-fitz"><option value="3">III</option><option value="4">IV</option><option value="5">V</option></select></label>
+        <label class="f">Past PIH<select id="r-hist"><option value="0">No</option><option value="1">Yes</option></select></label>
+        <label class="f">Melasma present<select id="r-mel"><option value="0">No</option><option value="1">Yes</option></select></label>
+        <label class="f">Procedure date<input id="r-date" type="date"></label>
+        <label class="f">Next visit (day)<input id="r-visit" type="number" min="7" max="56"></label>
+        <label class="f" id="crustWrap">Normal crust (days)<input id="r-crust" type="number" min="0" max="21"></label>
+        <label class="f" id="redWrap">Normal redness (days)<input id="r-red" type="number" min="3" max="42"></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row between"><h2>Clinic protocol</h2><span class="tiny muted">The app suggests. The clinician decides.</span></div>
+      <label class="f">Step 1 · Home<textarea id="p-home"></textarea></label>
+      <label class="f">Step 2 · In-clinic soothing care<textarea id="p-clinic"></textarea></label>
+      <label class="f">Step 3 · Clinician treatment<textarea id="p-doctor"></textarea></label>
+      <label class="f">Next-session plan when PIH was flagged<textarea id="p-next"></textarea></label>
+    </div>
+    <div class="card">
+      <h2>Demo</h2>
+      <p class="small muted">The app opens with a sample patient: fractional CO2, skin type IV, a sunny afternoon on day 6. Check-ins you add are kept on this device.</p>
+      <div class="row"><button class="small ghost" id="demo">Reload sample patient</button><button class="small ghost" id="clear">Start empty</button></div>
+      <p class="note">Concept for the Stanford AI Longevity Module 2 discussion. Readings are uncalibrated and the forecast is a teaching model. Not a medical device.</p>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs"><div class="in">
+  <button data-go="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
+  <button data-go="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>Check-in</button>
+  <button data-go="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Progress</button>
+  <button data-go="clinic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Clinic</button>
+</div></nav>
+<script src="app.js"></script>
+</body>
+</html>
