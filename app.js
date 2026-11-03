@@ -14,7 +14,7 @@ const PROC={
  pih:{E:0,R0:2,Rdays:3,A:6.8,visit:14,name:'Pigment: existing PIH'},
  other:{E:7,R0:5.8,Rdays:21,A:7,visit:14,name:'Other procedure'}
 };
-const FITZ={3:0.7,4:1.0,5:1.35}, VIS=8, DAYS=56, PEAK=28, FLAG=0.9, MULT=[1,0.85,0.7,0.6];
+const FITZ={1:0.5,2:0.6,3:0.7,4:1.0,5:1.35,6:1.5}, VIS=8, DAYS=56, PEAK=28, FLAG=0.9, MULT=[1,0.85,0.7,0.6];
 const f=t=>t<=0?0:Math.pow(t/PEAK,2)*Math.exp(2*(1-t/PEAK));
 const PROTO={
  redness:'Example: cooling and a barrier cream. Stop retinoids, acids and scrubs. Skip sauna, hard workouts and alcohol for 3 days.',
@@ -29,14 +29,14 @@ const WHY={redness:'Redness is fading slower than normal',brown:'Brown is rising
 const UVF=[5,6,7,8,6,4,9,7,5,6,8,7,6,5];               // sample UV forecast; a real app reads the weather API
 const uvFor=d=>UVF[d%UVF.length];
 function sunDose(uv){return uv>=8?'reapply every 90 min outdoors':uv>=6?'reapply every 2 h outdoors':uv>=3?'apply once before going out':'no extra sunscreen needed';}
-const DEMO_RECORD={proc:'co2',dx:'lentigo',device:'Fractional CO2',wave:'10,600 nm',set:'70 mJ · density 5% · 1 pass',spot:'120 µm',end:0,fitz:4,hist:0,mel:0,visit:28,crust:7,red:30};
+const DEMO_RECORD={age:34,proc:'co2',dx:'lentigo',device:'Fractional CO2',wave:'10,600 nm',set:'70 mJ · density 5% · 1 pass',spot:'120 µm',end:0,fitz:4,hist:0,mel:0,visit:28,crust:7,red:30};
 
 // ---------- storage ----------
-const KEY='pihguard.v2';
+const KEY='pihguard.v3';
 let S;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'null');if(v&&v.record&&v.proto&&v.proto.redness)return v;}catch(e){}return null;}
-function isoDaysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'null');if(v&&v.onboarded&&v.record&&v.proto&&v.proto.redness)return v;}catch(e){}return null;}
+function isoDaysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
 function key(r){return r.proc==='pigment'?r.dx:r.proc;}
 function course(r){const P={...PROC[key(r)]};if(key(r)==='other'||(r.proc==='pigment'&&r.dx==='other')){P.E=+r.crust||0;P.Rdays=+r.red||21;}return P;}
@@ -132,10 +132,11 @@ const ita=c=>Math.atan2(c.L-50,c.b)*180/Math.PI;
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
 function go(v){document.querySelectorAll('[data-view]').forEach(s=>s.hidden=s.id!=='v-'+v);
+  const onb=['welcome','setup','howto'].includes(v);$('tabs').hidden=onb;document.querySelector('header.top').hidden=v==='welcome';$('who').hidden=onb;
+  if(!onb&&history.replaceState)history.replaceState(null,'','#'+v);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.go===v?'page':'false'));
   if(v==='progress')drawChart(); if(v==='check')prepCheck(); window.scrollTo(0,0);}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
-$('goCheck').addEventListener('click',()=>go('check'));
 
 function todayDay(){const d0=new Date(S.record.date+'T00:00');return Math.max(0,Math.round((Date.now()-d0)/864e5));}
 function status(ev){
@@ -144,14 +145,18 @@ function status(ev){
   return ev.tier===1?{cls:'watch',txt:'Watch · Step 1'}:ev.tier===2?{cls:'watch',txt:'Clinic alerted · Step 2'}:{cls:'crit',txt:'Clinician review · Step 3'};
 }
 function renderToday(){
-  const ev=evaluate(S), st=status(ev), day=ev.last?ev.last.d:todayDay(), P=ev.P;
+  const ev=evaluate(S), st=status(ev), day=todayDay(), P=ev.P;
   $('who').textContent=`Day ${day} · ${P.name}`;
-  const pc=ev.last?Math.round(ev.last.fc/VIS*100):0;
-  $('statusCard').innerHTML=`<div class="row between"><h2>Healing check</h2><span class="pill ${st.cls}">${st.txt}</span></div>
-   <div class="kv"><div><b>Redness Δa*</b><span>${ev.last?ev.last.dR.toFixed(1):'–'}</span></div>
-   <div><b>Brown ΔITA°</b><span>${ev.last?(ev.last.crust?'crust':ev.last.dB.toFixed(1)):'–'}</span></div>
-   <div><b>Forecast peak</b><span>${ev.last?pc+'%':'–'}</span></div></div>
-   <p class="small muted">${ev.tier===0?(ev.last&&ev.last.crust?`Crust is expected until about day ${P.E}. Brown readings are ignored until then.`:'Healing is inside the normal course for this procedure.'):`Forecast pigment is heading toward the visible line. The steps below were added on day ${ev.flag}.`}</p>`;
+  const pc=ev.last?Math.round(ev.last.fc/VIS*100):0, td=todayDay(), doneTonight=S.entries.some(e=>e.day===td);
+  $('tonightCard').innerHTML=doneTonight
+   ?`<div class="row between"><h2>Tonight's check-in</h2><span class="pill ok">Done</span></div><p class="small muted">Day ${td} is saved. Next photo tomorrow night.</p><button class="ghost" data-act="check">Retake tonight's photo</button>`
+   :`<div class="row between"><h2>Tonight's check-in</h2><span class="tiny muted">Day ${td}</span></div><p class="small muted">About 40 seconds. Lights off, color sticker next to the treated area, flash on.</p><button data-act="check">Start check-in</button>`;
+  $('tonightCard').querySelector('[data-act]').onclick=()=>go('check');
+  $('statusCard').innerHTML=`<div class="row between"><h2>Healing so far</h2><span class="pill ${st.cls}">${st.txt}</span></div>
+   <div class="kv"><div><b>Redness (Δa*)</b><span>${ev.last?ev.last.dR.toFixed(1):'–'}</span></div>
+   <div><b>Brown (ΔITA°)</b><span>${ev.last?(ev.last.crust?'crust':ev.last.dB.toFixed(1)):'–'}</span></div>
+   <div><b>Pigment forecast</b><span>${ev.last?pc+'%':'–'}</span></div></div>
+   <p class="small muted">${!ev.last?'The first photo sets the starting point. Readings show up after tonight.':ev.tier===0?(ev.last&&ev.last.crust?`Crust is expected until about day ${P.E}. Brown readings are ignored until then.`:'Healing is inside the normal course for this procedure.'):`Forecast pigment is heading toward the visible line. The steps below were added on day ${ev.flag}.`}</p>`;
   const pr=S.proto, items=[]; let n=1;
   for(const k of ['redness','brown','crust','sun']) if(ev.active[k]) items.push(`<div class="step on"><i>${n++}</i><span><b>${WHY[k]}.</b> ${esc(pr[k])}${k==='sun'||k==='brown'?` <br><span class="small muted">Tomorrow UV ${uvFor(day+1)} (sample forecast): ${sunDose(uvFor(day+1))}.</span>`:''}${ev.worked[k]?` <span class="pill ${ev.worked[k]==='Working'?'ok':ev.worked[k]==='Mixed'?'watch':'crit'}">${ev.worked[k]}</span>`:''}</span></div>`);
   if(ev.tier>=2) items.push(`<div class="step on"><i>${n++}</i><span><b>Clinic visit moved earlier.</b> ${esc(pr.clinic)}</span></div>`);
@@ -162,7 +167,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 
 // ---------- check-in ----------
 let img=null, taps=[], wb=null, picked=new Set();
-function prepCheck(){ $('ciDay').value=Math.min(56,(evaluate(S).last?evaluate(S).last.d+1:todayDay())); stepState(); }
+function prepCheck(){ const d=Math.min(56,todayDay()); $('ciDay').value=d; $('ciTitle').textContent=`Tonight's check-in · Day ${d}`; stepState(); }
 function stepState(){const n=img?2+taps.length:1;document.querySelectorAll('#ciSteps .step').forEach(s=>{const k=+s.dataset.s;s.className='step '+(k<n?'done':k===n?'on':'');});
   $('saveCheck').disabled=!(img&&taps.length>=2);
   $('tapHint').textContent=!img?'':taps.length===0?'Tap the treated area.':taps.length===1?'Now tap untreated skin.':taps.length===2?'Optional: tap the gray sticker.':'Color corrected.';}
@@ -223,12 +228,40 @@ function drawChart(){
 }
 
 // ---------- clinic ----------
-const RF={'r-proc':'proc','r-dx':'dx','r-device':'device','r-wave':'wave','r-set':'set','r-spot':'spot','r-end':'end','r-fitz':'fitz','r-hist':'hist','r-mel':'mel','r-date':'date','r-visit':'visit','r-crust':'crust','r-red':'red'};
+const FIELDS=[
+ {sec:'Patient'},
+ {k:'age',l:'Age',t:'number',min:12,max:90},
+ {k:'fitz',l:'Skin type (Fitzpatrick)',o:[[1,'I'],[2,'II'],[3,'III'],[4,'IV'],[5,'V'],[6,'VI']]},
+ {k:'hist',l:'Past PIH',o:[[0,'No'],[1,'Yes']]},
+ {k:'mel',l:'Melasma present',o:[[0,'No'],[1,'Yes']]},
+ {sec:'Procedure'},
+ {k:'proc',l:'Procedure',full:1,o:[['co2','Fractional CO2 laser'],['rf','RF microneedling'],['peel','Chemical peel'],['mole','Mole / wart / SK removal'],['pigment','Pigment treatment'],['other','Other procedure']]},
+ {k:'dx',l:'Diagnosis',full:1,show:r=>r.proc==='pigment',o:[['melasma','Melasma'],['freckle','Freckles (ephelides)'],['lentigo','Solar lentigo'],['adm',"ADM (Hori's nevus)"],['cal','Café-au-lait macule'],['pih','Existing PIH (e.g. acne marks)'],['other','Other pigment']]},
+ {k:'date',l:'Procedure date',t:'date'},
+ {k:'visit',l:'Next visit (day)',t:'number',min:7,max:56},
+ {k:'device',l:'Device'},{k:'wave',l:'Wavelength'},{k:'set',l:'Settings'},{k:'spot',l:'Spot size'},
+ {k:'end',l:'Immediate skin response',full:1,o:[[0,'As intended'],[1,'Stronger than intended']]},
+ {k:'crust',l:'Normal crust (days)',t:'number',min:0,max:21,show:r=>key(r)==='other'},
+ {k:'red',l:'Normal redness (days)',t:'number',min:3,max:42,show:r=>key(r)==='other'}
+];
+const NUM=['age','end','fitz','hist','mel','visit','crust','red'];
+function buildForm(box){
+  let h='',open=false;
+  for(const f of FIELDS){
+    if(f.sec){h+=(open?'</div>':'')+`<p class="sec">${f.sec}</p><div class="grid2">`;open=true;continue;}
+    const inp=f.o?`<select data-k="${f.k}">${f.o.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join('')}</select>`
+      :`<input data-k="${f.k}" type="${f.t||'text'}"${f.min!=null?` min="${f.min}" max="${f.max}"`:''}${f.t==='number'?' inputmode="numeric"':''}>`;
+    h+=`<label class="f${f.full?' full':''}" data-f="${f.k}">${f.l}${inp}</label>`;
+  }
+  $(box).innerHTML=h+(open?'</div>':'');
+  $(box).querySelectorAll('[data-k]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.k;let v=el.value;if(NUM.includes(k))v=v===''?'':+v;S.record[k]=v;
+    if(k==='proc'||k==='dx')S.record.visit=course(S.record).visit;fillForms();save();renderAll();}));
+}
+function fillForms(){for(const box of ['setupForm','clinicForm']){const b=$(box);
+  b.querySelectorAll('[data-k]').forEach(el=>{if(document.activeElement!==el)el.value=S.record[el.dataset.k]??'';});
+  for(const f of FIELDS)if(f.show){const w=b.querySelector(`[data-f="${f.k}"]`);w.hidden=!f.show(S.record);}}}
+function fillClinic(){fillForms();for(const id in PF)$(id).value=S.proto[PF[id]];}
 const PF={'p-redness':'redness','p-brown':'brown','p-crust':'crust','p-sun':'sun','p-clinic':'clinic','p-doctor':'doctor','p-hold':'hold'};
-function fillClinic(){for(const id in RF)$(id).value=S.record[RF[id]]??'';for(const id in PF)$(id).value=S.proto[PF[id]];vis();}
-function vis(){const r=S.record;$('dxWrap').hidden=r.proc!=='pigment';const oth=r.proc==='other'||(r.proc==='pigment'&&r.dx==='other');$('crustWrap').hidden=!oth;$('redWrap').hidden=!oth;}
-for(const id in RF)$(id).addEventListener('input',e=>{const k=RF[id];let v=e.target.value;if(['end','fitz','hist','mel','visit','crust','red'].includes(k))v=+v;S.record[k]=v;
-  if(k==='proc'||k==='dx'){S.record.visit=course(S.record).visit;$('r-visit').value=S.record.visit;}vis();save();renderAll();});
 for(const id in PF)$(id).addEventListener('input',e=>{S.proto[PF[id]]=e.target.value||PROTO[PF[id]];save();renderAll();});
 function renderAlert(){const ev=evaluate(S),st=status(ev);
   $('alertCard').className='card'+(ev.tier>=2?' alert':'');
@@ -240,11 +273,23 @@ function renderAlert(){const ev=evaluate(S),st=status(ev);
   <h3>Next session</h3>
   <p class="small">${ev.flag==null?'Can go ahead as planned.':(ev.onHold?(S.proto.hold==='hold'?'<b>On hold</b> until brown is back in the normal band.':'<b>Advise waiting</b> until brown is back in the normal band.'):'Brown is back in the normal band. Can go ahead.')}
   ${ev.flag!=null?` Suggestion for the clinician: this patient reacts ${slow.toFixed(1)}× the record's prediction. Consider an earlier first check-in, starting home steps from day 0, and reviewing settings for this skin type.`:''}</p>`;}
-$('demo').addEventListener('click',()=>{S=fresh(true);save();fillClinic();renderAll();toast('Sample patient loaded');});
-$('clear').addEventListener('click',()=>{S.entries=[];S.record.date=new Date().toISOString().slice(0,10);save();fillClinic();renderAll();toast('Started empty');});
+function fresh(demo){
+  if(demo){const r={...DEMO_RECORD,date:isoDaysAgo(15)};return {onboarded:true,record:r,proto:{...PROTO},entries:demoEntries(r)};}
+  const r={age:'',proc:'co2',dx:'lentigo',device:'',wave:'',set:'',spot:'',end:0,fitz:3,hist:0,mel:0,visit:PROC.co2.visit,crust:7,red:21,date:isoDaysAgo(0)};
+  return {onboarded:false,record:r,proto:{...PROTO},entries:[]};}
+$('w-new').addEventListener('click',()=>{S=fresh(false);fillClinic();renderAll();go('setup');});
+$('w-demo').addEventListener('click',()=>{S=fresh(true);save();fillClinic();renderAll();go('today');toast('Sample patient loaded');});
+$('s-back').addEventListener('click',()=>go('welcome'));
+$('s-next').addEventListener('click',()=>{if(!S.record.date){toast('Add the procedure date');return;}go('howto');});
+$('h-back').addEventListener('click',()=>go('setup'));
+const finish=v=>{S.onboarded=true;save();renderAll();go(v);};
+$('h-go').addEventListener('click',()=>finish('check'));
+$('h-later').addEventListener('click',()=>finish('today'));
+$('restart').addEventListener('click',()=>{try{localStorage.removeItem(KEY);}catch(e){}go('welcome');});
 
-function fresh(demo){const r={...DEMO_RECORD,date:isoDaysAgo(14)};return {record:r,proto:{...PROTO},entries:demo?demoEntries(r):[]};}
 function renderAll(){renderToday();renderAlert();if(!$('v-progress').hidden)drawChart();}
-S=load()||fresh(true); save(); fillClinic(); renderAll(); const h=location.hash.slice(1); if(["today","check","progress","clinic"].includes(h)) go(h);
+buildForm('setupForm');buildForm('clinicForm');
+S=load(); if(S){fillClinic();renderAll();const h=location.hash.slice(1);go(["today","check","progress","clinic"].includes(h)?h:'today');}
+else{S=fresh(false);fillClinic();renderAll();go('welcome');}
 if('serviceWorker' in navigator){} // offline install not needed for the demo
 })();

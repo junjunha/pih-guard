@@ -73,6 +73,14 @@ nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;z-index:9}
 .note{font-size:.78rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
+.hero{text-align:center;padding:28px 0 18px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero h1{margin:0;font-size:1.6rem;letter-spacing:-.02em}
+button.wide{width:100%;margin-top:8px;padding:14px}
+.navrow{gap:8px}.navrow button{flex:1;padding:14px}
+.stepno{margin:0 0 8px 2px;font-weight:600;letter-spacing:.02em}
+.sec{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 -2px}
+details summary{cursor:pointer}
+.done-mark{display:flex;gap:10px;align-items:center}
 .alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
 </style>
 </head>
@@ -83,21 +91,65 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     <div class="who" id="who"></div>
   </header>
 
+  <!-- WELCOME -->
+  <section id="v-welcome" data-view data-onb hidden>
+    <div class="hero">
+      <img src="icon.svg" width="56" height="56" alt="">
+      <h1>PIH Guard</h1>
+      <p class="muted">Catches dark marks early after laser, peel or RF microneedling.</p>
+    </div>
+    <div class="card">
+      <div class="steps">
+        <div class="step on"><i>1</i><span><b>The clinic sets up your procedure.</b> Skin type, device and settings, filled in at the visit.</span></div>
+        <div class="step on"><i>2</i><span><b>You take one flash photo each night.</b> Lights off, about 40 seconds.</span></div>
+        <div class="step on"><i>3</i><span><b>If healing drifts, the app steps in.</b> It tells you what to do, checks every day if it works, and lets the clinic know.</span></div>
+      </div>
+    </div>
+    <button class="wide" id="w-new">Set up a new patient</button>
+    <button class="wide ghost" id="w-demo">See a sample patient (day 15)</button>
+    <p class="note" style="margin-top:14px">Concept for the Stanford AI Longevity Module 2 discussion. Readings are uncalibrated and the forecast is a teaching model. Not a medical device.</p>
+  </section>
+
+  <!-- SETUP (clinic) -->
+  <section id="v-setup" data-view data-onb hidden>
+    <p class="tiny muted stepno">Step 1 of 2 · At the clinic</p>
+    <div class="card">
+      <h2>Patient and procedure</h2>
+      <p class="small muted">Filled in by the clinic at the visit. The patient doesn't need to know the device or settings.</p>
+      <div id="setupForm"></div>
+    </div>
+    <div class="row navrow"><button class="ghost" id="s-back">Back</button><button id="s-next">Continue</button></div>
+  </section>
+
+  <!-- HOW-TO (patient) -->
+  <section id="v-howto" data-view data-onb hidden>
+    <p class="tiny muted stepno">Step 2 of 2 · At home</p>
+    <div class="card">
+      <h2>Your nightly photo</h2>
+      <p class="small muted">Same light every night is what makes the numbers comparable.</p>
+      <div class="steps">
+        <div class="step on"><i>1</i><span>Turn off the lights.</span></div>
+        <div class="step on"><i>2</i><span>Put the gray color sticker next to the treated area.</span></div>
+        <div class="step on"><i>3</i><span>Flash on. Hold the phone about 30 cm away, same angle each night.</span></div>
+        <div class="step on"><i>4</i><span>Tap the treated spot, then normal skin next to it. That's it.</span></div>
+      </div>
+      <p class="tiny muted">Photos stay on this phone. Only the numbers are saved.</p>
+    </div>
+    <div class="row navrow"><button class="ghost" id="h-back">Back</button><button id="h-go">Take the first photo</button></div>
+    <button class="wide ghost" id="h-later" style="margin-top:8px">Later</button>
+  </section>
+
   <!-- TODAY -->
-  <section id="v-today" data-view>
+  <section id="v-today" data-view hidden>
+    <div class="card" id="tonightCard"></div>
     <div class="card" id="statusCard"></div>
     <div class="card" id="doCard"></div>
-    <div class="card">
-      <h2>Tonight's check-in</h2>
-      <p class="small muted">About 40 seconds. Lights off, color sticker on your jaw, flash on.</p>
-      <button id="goCheck">Start check-in</button>
-    </div>
   </section>
 
   <!-- CHECK-IN -->
   <section id="v-check" data-view hidden>
     <div class="card">
-      <div class="row between"><h2>Check-in</h2><span class="tiny muted">Photos stay on this phone. Only the numbers are saved.</span></div>
+      <div class="row between"><h2 id="ciTitle">Tonight's check-in</h2><span class="tiny muted">Photos stay on this phone. Only the numbers are saved.</span></div>
       <div class="steps" id="ciSteps">
         <div class="step" data-s="1"><i>1</i><span>Turn off the lights and take a photo with the flash. Keep the color sticker in frame.</span></div>
         <div class="step" data-s="2"><i>2</i><span>Tap the treated area.</span></div>
@@ -119,7 +171,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <button class="chip" data-t="sunscreen" aria-pressed="false">Reapplied sunscreen</button>
         <button class="chip" data-t="sun" aria-pressed="false">Long time in the sun</button>
       </div>
-      <label class="f">Day after the procedure<input id="ciDay" type="number" min="0" max="56"></label>
+      <details class="tiny muted"><summary>Logging a different day?</summary><label class="f" style="margin-top:6px">Day after the procedure<input id="ciDay" type="number" min="0" max="56"></label></details>
       <button id="saveCheck" disabled>Save tonight's check-in</button>
     </div>
   </section>
@@ -145,27 +197,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <section id="v-clinic" data-view hidden>
     <div class="card" id="alertCard"></div>
     <div class="card">
-      <div class="row between"><h2>Procedure record</h2><span class="tiny muted">Clinic only. Not shown to the patient.</span></div>
-      <div class="grid2">
-        <label class="f full">Procedure<select id="r-proc">
-          <option value="co2">Fractional CO2 laser</option><option value="rf">RF microneedling</option><option value="peel">Chemical peel</option>
-          <option value="mole">Mole / wart / SK removal</option><option value="pigment">Pigment treatment</option><option value="other">Other procedure</option></select></label>
-        <label class="f full" id="dxWrap">Diagnosis<select id="r-dx">
-          <option value="melasma">Melasma</option><option value="freckle">Freckles (ephelides)</option><option value="lentigo">Solar lentigo</option>
-          <option value="adm">ADM (Hori's nevus)</option><option value="cal">Café-au-lait macule</option><option value="pih">Existing PIH (e.g. acne marks)</option><option value="other">Other pigment</option></select></label>
-        <label class="f">Device<input id="r-device"></label>
-        <label class="f">Wavelength<input id="r-wave"></label>
-        <label class="f">Settings<input id="r-set"></label>
-        <label class="f">Spot size<input id="r-spot"></label>
-        <label class="f">Immediate skin response<select id="r-end"><option value="0">As intended</option><option value="1">Stronger than intended</option></select></label>
-        <label class="f">Skin type (Fitzpatrick)<select id="r-fitz"><option value="3">III</option><option value="4">IV</option><option value="5">V</option></select></label>
-        <label class="f">Past PIH<select id="r-hist"><option value="0">No</option><option value="1">Yes</option></select></label>
-        <label class="f">Melasma present<select id="r-mel"><option value="0">No</option><option value="1">Yes</option></select></label>
-        <label class="f">Procedure date<input id="r-date" type="date"></label>
-        <label class="f">Next visit (day)<input id="r-visit" type="number" min="7" max="56"></label>
-        <label class="f" id="crustWrap">Normal crust (days)<input id="r-crust" type="number" min="0" max="21"></label>
-        <label class="f" id="redWrap">Normal redness (days)<input id="r-red" type="number" min="3" max="42"></label>
-      </div>
+      <div class="row between"><h2>Patient and procedure</h2><span class="tiny muted">Clinic only. Not shown to the patient.</span></div>
+      <div id="clinicForm"></div>
     </div>
     <div class="card">
       <div class="row between"><h2>Actions by signal</h2><span class="tiny muted">Examples. Each clinic sets its own.</span></div>
@@ -180,14 +213,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     </div>
     <div class="card">
       <h2>Demo</h2>
-      <p class="small muted">The app opens with a sample patient: fractional CO2, skin type IV, a sunny afternoon on day 6. Check-ins you add are kept on this device.</p>
-      <div class="row"><button class="small ghost" id="demo">Reload sample patient</button><button class="small ghost" id="clear">Start empty</button></div>
+      <p class="small muted">Check-ins you add are kept on this device.</p>
+      <div class="row"><button class="small ghost" id="restart">Back to start screen</button></div>
       <p class="note">Concept for the Stanford AI Longevity Module 2 discussion. Readings are uncalibrated and the forecast is a teaching model. Not a medical device.</p>
     </div>
   </section>
 </div>
 
-<nav class="tabs"><div class="in">
+<nav class="tabs" id="tabs"><div class="in">
   <button data-go="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
   <button data-go="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>Check-in</button>
   <button data-go="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Progress</button>
