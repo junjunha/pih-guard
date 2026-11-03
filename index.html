@@ -168,11 +168,15 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       </div>
     </div>
     <div class="card">
-      <div class="row between"><h2>Clinic protocol</h2><span class="tiny muted">The app suggests. The clinician decides.</span></div>
-      <label class="f">Step 1 · Home<textarea id="p-home"></textarea></label>
-      <label class="f">Step 2 · In-clinic soothing care<textarea id="p-clinic"></textarea></label>
-      <label class="f">Step 3 · Clinician treatment<textarea id="p-doctor"></textarea></label>
-      <label class="f">Next-session plan when PIH was flagged<textarea id="p-next"></textarea></label>
+      <div class="row between"><h2>Actions by signal</h2><span class="tiny muted">Examples. Each clinic sets its own.</span></div>
+      <p class="small muted">The app picks the action that matches what went off course, then checks 72 hours later whether it worked for this patient. As records pile up (habits, settings, skin type), these defaults can be tuned from the clinic's own results.</p>
+      <label class="f">Redness fading slowly<textarea id="p-redness"></textarea></label>
+      <label class="f">Brown rising after the crust<textarea id="p-brown"></textarea></label>
+      <label class="f">Picked a crust<textarea id="p-crust"></textarea></label>
+      <label class="f">Sun exposure (dose follows the UV forecast)<textarea id="p-sun"></textarea></label>
+      <label class="f">If home steps don't work · clinic<textarea id="p-clinic"></textarea></label>
+      <label class="f">If that doesn't work · clinician<textarea id="p-doctor"></textarea></label>
+      <label class="f">Next session when PIH was flagged<select id="p-hold"><option value="hold">Hold until brown is back in the normal band</option><option value="advise">Advise waiting, clinician decides</option></select></label>
     </div>
     <div class="card">
       <h2>Demo</h2>
