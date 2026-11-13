@@ -120,12 +120,39 @@ details summary{cursor:pointer}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .menu{position:absolute;right:0}
 .linkish{background:none;color:var(--accent);padding:0;font-weight:600}
+header.top .brand{background:none;color:var(--ink);padding:4px 0;border-radius:8px}
+/* example mode: orange bar + orange frame so it never looks like your own data */
+:root{--ex:#c76a12}
+@media (prefers-color-scheme:dark){:root{--ex:#e8953f}}
+#exBanner{position:sticky;top:0;z-index:6;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--ex);color:#fff;border:0;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.8rem}
+#exBanner div{display:flex;flex-direction:column;gap:2px}#exBanner b{font-size:.9rem}#exBanner span{opacity:.92}
+#exBanner button{background:#fff;color:var(--ex);flex:none;padding:9px 12px;font-size:.85rem}
+body.exmode .app{box-shadow:inset 0 0 0 3px var(--ex)}
+body.exmode nav.tabs{border-top:3px solid var(--ex)}
+body.exmode nav.tabs button[aria-current="page"]{color:var(--ex)}
+.path .sec{margin:0}
+.expath{border:2px dashed var(--ex)}
+.expath .sec{color:var(--ex)}
+button.exbtn{background:var(--ex)}button.exbtn.ghost{background:color-mix(in srgb,var(--ex) 14%,transparent);color:var(--ex)}
+.imgs.ba img,.imgs.ba canvas{aspect-ratio:3/2;object-fit:cover}
+.viz{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.gauge .gv{font-weight:700;font-variant-numeric:tabular-nums}
+.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles div{display:flex;flex-direction:column;gap:1px;border-left:4px solid var(--ok)}
+.tiles div.twarn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--soft))}
+.tiles i{font-style:normal;font-size:.7rem;color:var(--muted)}
+details.care{border-top:1px solid var(--line);padding:10px 0 2px}
+details.care summary{font-weight:700;font-size:.95rem;list-style:none;display:flex;justify-content:space-between}
+details.care summary::-webkit-details-marker{display:none}
+details.care summary::after{content:"+";color:var(--muted);font-weight:400}
+details.care[open] summary::after{content:"\2212"}
+details.care ul{margin-top:8px}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><img src="icon.svg" width="26" height="26" alt="">PIH Guard</div>
+    <button class="brand" id="homeBtn"><img src="icon.svg" width="26" height="26" alt="">PIH Guard</button>
     <div class="row"><span class="who" id="who"></span><button class="small ghost" id="moreBtn" aria-label="More">More</button></div>
   </header>
   <div id="exBanner" class="banner" hidden></div>
@@ -137,6 +164,6 @@ details summary{cursor:pointer}
   <button data-go="course"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Course</button>
   <button data-go="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Report</button>
 </div></nav>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

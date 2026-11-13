@@ -15,9 +15,15 @@ const r1 = x => (x == null || isNaN(x)) ? '-' : (Math.round(x * 10) / 10).toStri
 
 /* ---------- state ---------- */
 const blank = () => ({ step: 'welcome', consent: false, profile: {}, habits: {}, baseline: null, clinic: null, checks: [], outcome: null, example: false });
-let S;
-try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch { S = blank(); }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { toast('Storage full: older photos were not saved'); } }
+/* Two separate states. MY = the user's own data, saved on this phone.
+   The example patient lives only in memory, so opening it never touches MY. */
+let MY;
+try { MY = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch { MY = blank(); }
+if (MY.example) MY = blank(); // older versions wrote the example over the user's data
+let S = MY;
+const isEx = () => S !== MY;
+function save() { if (isEx()) return; try { localStorage.setItem(KEY, JSON.stringify(MY)); } catch { toast('Storage full: older photos were not saved'); } }
+const myHome = () => MY.clinic ? 'today' : 'welcome';
 
 /* ---------- evidence & procedure knowledge ---------- */
 /* tau = how fast redness is expected to fade (days). Working assumptions shaped by
@@ -204,8 +210,10 @@ function render() {
   $('#tabs').hidden = !S.clinic || !['today', 'check', 'course', 'report', 'proc', 'result', 'more'].includes(v);
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.go === v ? 'page' : 'false'));
   $('#who').textContent = S.clinic ? `Day ${todayN()}` : '';
-  $('#exBanner').hidden = !S.example;
-  $('#exBanner').innerHTML = 'Example patient. Clinic photos are a real, consented case (cropped, de-identified). Daily check-ins are <b>simulated</b> to show the flow. <button class="linkish" data-act="reset">Start my own</button>';
+  document.body.classList.toggle('exmode', isEx());
+  $('#exBanner').hidden = !isEx();
+  $('#exBanner').innerHTML = `<div><b>Example patient · demo</b><span>Clinic photos are a real, consented case (cropped). Nightly check-ins are simulated. Nothing here is saved or mixed with your own data.</span></div><button data-act="exitExample">Exit to my app</button>`;
+  $('#homeBtn').setAttribute('aria-label', isEx() ? 'Exit example, back to my app' : 'Home');
   $('#view').innerHTML = (V[v] || V.welcome)();
   (V[v + '_after'] || (() => { }))();
 }
@@ -213,9 +221,13 @@ function render() {
 V.welcome = () => `
 <div class="hero"><img src="icon.svg" width="64" height="64" alt=""><h1>PIH Guard</h1>
 <p class="muted">Catch dark marks after skin procedures early, while there is still time to act.</p></div>
-<div class="card"><p>Set this up <b>before</b> your procedure. Your clinic sends the treatment details. Each night you take one flash photo and do a 30-second check. The app tells you where you are in the healing course, what to change in daily care, and when to contact your clinic.</p></div>
-<button class="wide" data-go="guide">Get started</button>
-<button class="wide ghost" data-act="example">See an example patient</button>`;
+<div class="card path"><span class="sec">My app</span><h2>Use PIH Guard for my own procedure</h2>
+<p class="small">Set this up <b>before</b> your procedure. Your clinic sends the treatment details. Each night you take one flash photo and do a 30-second check. The app tells you where you are in the healing course, what to change in daily care, and when to contact your clinic.</p>
+<button data-go="guide">${MY.consent ? 'Continue my setup' : 'Get started'}</button></div>
+<div class="card path expath"><span class="sec">Demo</span><h2>See an example patient</h2>
+<p class="small">A filled-in course: real clinic photos from one consented case, with simulated nightly check-ins. Opens in demo mode with an orange bar; your own data is not touched. Tap <b>Exit to my app</b> or the logo to come back here.</p>
+<div class="imgs ba"><figure><img src="assets/case_before.jpg" alt="Before"><figcaption>Before the course</figcaption></figure><figure><img src="assets/case_after.jpg" alt="After"><figcaption>After the course</figcaption></figure></div>
+<div class="row navrow"><button class="exbtn" data-act="example">Day 9 (mid-course)</button><button class="exbtn ghost" data-act="example14">Day 14 (visit)</button></div></div>`;
 
 V.guide = () => `
 <p class="stepno muted small">Step 1 of 5 · How it works</p>
@@ -352,7 +364,7 @@ ${c.rows.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.medium)} · ${esc(r.wl
 ${c.settingsNote ? `<p class="note">${esc(c.settingsNote)}</p>` : ''}
 <p class="small"><b>Notes:</b> ${esc(c.notes)}</p></div>
 <div class="card"><h3>Baselines</h3><div class="imgs">
-<figure>${c.markview ? `<img src="${c.markview}" alt="Clinic pre-treatment photo">` : '<div class="muted small">No clinic photo</div>'}<figcaption>Clinic pre-treatment photo (Markview) ${c.example ? '<span class="tag real">real case</span>' : ''}</figcaption></figure>
+<figure>${c.markview ? `<img src="${c.markview}" alt="Clinic pre-treatment photo">` : '<div class="muted small" style="padding:20px 0">Your clinic\'s photo appears here</div>'}<figcaption>Clinic pre-treatment photo (Markview) ${c.example ? '<span class="tag real">real case</span>' : ''}</figcaption></figure>
 <figure>${S.baseline?.img ? `<img src="${S.baseline.img}" alt="Your baseline">` : `<div class="muted small" style="padding:20px 0">${S.baseline ? 'Numbers only (simulated)' : 'Not taken'}</div>`}<figcaption>Your own flash photo before the procedure</figcaption></figure></div></div>
 <div class="card"><h3>Alert rules set before treatment</h3><p class="small muted">The clinic fixed these before any photo was taken, so nobody moves the goalposts later.</p>
 <ul class="guide small"><li><b>Watch</b>: redness above the usual range for that day, or brown more than 2 units above your pre-procedure photo, or stinging or itching 2 of 3.</li>
@@ -361,6 +373,66 @@ ${c.settingsNote ? `<p class="note">${esc(c.settingsNote)}</p>` : ''}
 <li><b>After the visit</b>: on day ${c.visitDay} the clinic records the outcome. New treatment: a new daily course starts. No new treatment: check-ins every 3 days until day 28, since PIH can appear weeks after healing.</li></ul></div>
 <button class="wide" data-go="today">Go to today</button>`;
 };
+
+/* one horizontal scale: shaded zone + where you are */
+function gauge({ title, val, min, max, zone, zoneLabel, zoneCol, mark, unit, ticks }) {
+  const W = 520, H = 58, pl = 8, pr = 8, X = v => pl + (Math.min(Math.max(v, min), max) - min) / (max - min) * (W - pl - pr);
+  return `<div class="gauge"><div class="row between small"><b>${title}</b><span class="gv">${val == null ? '-' : (val > 0 && unit !== '%' ? '+' : '') + r1(val) + unit}</span></div>
+<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${title}">
+<rect x="${pl}" y="16" width="${W - pl - pr}" height="12" rx="6" fill="var(--soft)"/>
+<rect x="${X(zone[0])}" y="16" width="${X(zone[1]) - X(zone[0])}" height="12" rx="6" fill="${zoneCol}"/>
+<text x="${(X(zone[0]) + X(zone[1])) / 2}" y="11" font-size="11" text-anchor="middle" fill="var(--muted)">${zoneLabel}</text>
+${(mark != null) ? `<line x1="${X(mark)}" x2="${X(mark)}" y1="12" y2="32" stroke="var(--warn)" stroke-width="2"/>` : ''}
+${ticks.map(t => `<text x="${X(t)}" y="${H - 6}" font-size="10" text-anchor="middle" fill="var(--muted)">${t}${unit}</text>`).join('')}
+${val != null ? `<circle cx="${X(val)}" cy="22" r="8" fill="var(--ink)" stroke="var(--surface)" stroke-width="2.5"/>` : ''}
+</svg></div>`;
+}
+function briefViz(e, all) {
+  if (!e) return '';
+  const b0 = baseBrown(), dB = e.ch.m ? e.ch.m.dMI - b0 : null, L = e.ch.life || {}, F = e.ch.feel || {};
+  const red = e.rel != null && e.t > 0 ? gauge({ title: 'Redness, % of day 0', val: e.rel * 100, min: 0, max: 140, zone: [e.b.lo * 100, e.b.hi * 100], zoneLabel: `usual on day ${e.t}`, zoneCol: 'var(--band)', unit: '%', ticks: [0, 50, 100, 140] }) : '';
+  const brown = dB != null ? gauge({ title: 'Brown vs your pre-procedure photo', val: dB, min: -3, max: 6, zone: [2, 6], zoneLabel: 'watch zone', zoneCol: 'color-mix(in srgb,var(--warn) 22%,transparent)', mark: 2, unit: '', ticks: [-3, 0, 2, 6] }) : '';
+  const out = +L.outdoor || 0, re = +L.reapply || 0, heat = (L.heat || []), sym = Math.max(F.sting || 0, F.itch || 0, F.warm || 0);
+  const tile = (k, v, ok, sub) => `<div class="${ok ? 'tok' : 'twarn'}"><b>${k}</b><span>${v}</span><i>${sub}</i></div>`;
+  const tiles = `<div class="kv tiles">${tile('Outside', out + ' min', out < 60 || re >= 2, out >= 60 ? 'long day out' : 'short')}${tile('Sunscreen re-applied', re + 'x', out < 60 || re >= 2, out >= 60 ? 'plan: 2x or more' : 'plan met')}${tile('Heat / sweat', heat.length ? heat.length : 'none', !heat.length || e.t > 7, heat.length ? heat.join(', ') : 'plan met')}${tile('Symptoms', ['none', 'mild', 'clear', 'strong'][sym], sym < 2, 'worst of sting / itch / warmth')}</div>`;
+  return `<div class="viz">${red}${brown}<h3>Tonight's log against the plan</h3>${tiles}<h3>The course so far</h3>${courseSVG(all, e.t)}</div>`;
+}
+
+/* full care guide: personal lines first, then the standing rules by topic */
+function careHTML(e) {
+  const t = e ? e.t : 0, G = guideFor(e);
+  const it = (txt, k, why) => `<li>${txt} ${tag(k)}${why ? `<br><span class="tiny muted">${why}</span>` : ''}</li>`;
+  const wk = t <= 7 ? '<b>This week.</b> ' : '';
+  const sec = (title, items, open) => `<details class="care" ${open ? 'open' : ''}><summary>${title}</summary><ul class="guide">${items.join('')}</ul></details>`;
+  return `<div class="card"><div class="row between"><h2>Care guide · day ${t}</h2><span class="tiny muted">tap a topic</span></div>
+${sec('For you tonight', G.map(x => it(x.txt, x.k, 'Why: ' + x.why)), true)}
+${sec('Sunscreen: how much and how often', [
+    it('<b>How much:</b> about a quarter teaspoon (1.25 mL) for the face alone, or two full finger-lengths for face and neck. This is close to the 2 mg/cm² used to test SPF. Most people put on about half of that, and then the real protection is far below the label.', 'lit'),
+    it('<b>Which one:</b> broad spectrum, SPF 30 or higher (PA+++ or higher on Asian labels). A tinted sunscreen with iron oxides also blocks visible light, which can darken pigment in medium to dark skin.', 'lit'),
+    it('<b>When:</b> every morning, even indoors by a window. Re-apply every 2 hours outside, and after sweating or wiping your face.', 'lit'),
+    it('<b>Plus:</b> a wide-brim hat or parasol outside, and shade around midday.', 'lit')], t <= 14)}
+${sec('Washing and moisturising', [
+    it('Lukewarm water and a mild, low-pH cleanser. Pat dry; do not rub the treated area.', 'clinic'),
+    it('Moisturiser morning and night. Dryness and a tight feeling for the first few days are common after toning.', 'clinic'),
+    it('If the skin feels warm on day 0 or 1, a cool pack wrapped in a cloth for about 10 minutes. Not ice straight on the skin.', 'clinic'),
+    it('Makeup is usually fine from the next day if the skin is not broken. Remove it gently, without scrubbing.', 'clinic')])}
+${sec('Do not', [
+    it('Pick, scratch or rub crusts and dark spots. Let crusts fall off by themselves.', 'clinic'),
+    it(wk + 'No sauna, hot baths, hot yoga or hard workouts. Heat keeps redness going.', 'weak'),
+    it('No retinoids (retinol, tretinoin), AHA / BHA acids, scrubs, peels, or waxing on the area until your clinic says OK.', 'clinic'),
+    it('No new skincare products or home beauty devices on the face until the skin settles.', 'clinic'),
+    it('No sunbathing or tanning, and no long outdoor activity in the midday sun.', 'lit')])}
+${sec('Daily life', [
+    it('Hot kitchen, steam and hot showers: keep them short in the first days.', 'weak'),
+    it('Around your period, be extra strict with sun.', 'weak', 'Small studies link this phase to more pigment.'),
+    it('Alcohol and sleep: no direct study yet. The app logs them and your report checks whether they line up with your redness.', 'track'),
+    it('A clean pillowcase, and keep hair and phone off the treated area.', 'clinic')])}
+${sec('Contact your clinic now if', [
+    it('Blisters, oozing, or pain that gets worse instead of better.', 'clinic'),
+    it('Crusting that spreads, or a rash around the area.', 'clinic'),
+    it('The spot looks darker than before the procedure, or the app says "Contact your clinic".', 'clinic')])}
+<p class="note">Example aftercare for toning, written for this prototype. Your clinic's own instructions come first.</p></div>`;
+}
 
 V.today = () => {
   if (!S.clinic) return V.connect();
@@ -377,9 +449,10 @@ ${askFollow ? `<div class="card alert"><h2>Visit day</h2><p class="small">Did yo
 <div class="row navrow"><button data-act="followTreated">Yes: start a new daily course</button><button class="ghost" data-act="followNone">No: every 3 days until day 28</button></div></div>` : ''}
 ${B ? `<div class="card"><div class="row between"><h2>AI briefing · day ${last.t}</h2><button class="small ghost" data-act="why">Why?</button></div><div class="brief">
 <div><b>Where</b><span>${B.where}</span></div><div><b>Sure?</b><span>${B.conf}</span></div><div><b>Do</b><span>${B.todo}</span></div>${B.adapt ? `<div><b>Adapt</b><span>${B.adapt}</span></div>` : ''}</div>
+${briefViz(last, all)}
 <div id="whyBox" hidden class="note">Numbers used: redness +${r1(last.ch.m?.dEI)} and brown +${r1(last.ch.m?.dMI)} vs your normal skin (pre-procedure brown +${r1(baseBrown())}). Usual range for day ${last.t}: ${Math.round(last.b.lo * 100)} to ${Math.round(last.b.hi * 100)}% of day 0.
 Comparison group: ${group().name}. Patients with outcomes in this group: ${group().n}. Under 5, the range comes from published data, not patients. Alert rules are the ones your clinic set before treatment.</div></div>` : ''}
-<div class="card"><h2>Care guide for tonight</h2><ul class="guide">${G.map(x => `<li>${x.txt} ${tag(x.k)}<br><span class="tiny muted">Why: ${x.why}</span></li>`).join('')}</ul></div>
+${careHTML(last)}
 <div class="card"><div class="row between"><h3>Your treatment</h3><button class="small ghost" data-go="proc">Open</button></div><p class="small muted">${esc(S.clinic.rows.map(r => r.name).join(' + '))} · ${fmt(S.clinic.date)}</p></div>`;
 };
 V.today_after = () => { const b = $('[data-act="why"]'); if (b) b.onclick = e => { e.stopPropagation(); $('#whyBox').hidden = !$('#whyBox').hidden; }; };
@@ -389,6 +462,7 @@ V.check = () => {
   if (!S.clinic) return V.connect();
   const n = todayN(), fem = S.profile.sex === 'female' && S.profile.meno !== 'yes';
   return `<p class="stepno muted small">Day ${n} check-in</p>
+${isEx() ? '<p class="banner">Demo: you can try the photo analysis here, but nothing is saved. Your own check-ins start in your app.</p>' : ''}
 ${photoBlock('Photo', 'Dark room, flash on, rear camera, about 20 cm. Then tap the treated spot and normal skin.')}
 <div class="card"><h2>What happened today</h2><div class="grid2">
 <label class="f">Minutes outside<input id="outdoor" type="number" inputmode="numeric" placeholder="0"></label>
@@ -420,9 +494,11 @@ ${c.img ? `<img src="${c.img}" style="width:100%;border-radius:12px" alt="Tonigh
 <h3>1. Your photo</h3>${m ? `<div class="kv"><div><b>Redness vs normal</b><span>+${r1(m.dEI)}</span></div><div><b>Red area</b><span>${Math.round(m.redA)}%</span></div><div><b>Brown vs normal</b><span>+${r1(m.dMI)}</span></div></div>
 <p class="small">Marked spot in the ${m.watch ? where(m) : 'photo'}: ${m.redA > 50 ? 'mostly red' : m.redA > 15 ? 'patchy redness' : 'little redness'}${m.brownA > 30 ? ', with brown areas' : ''}. Brown is ${m.dMI - baseBrown() > 2 ? '<b>above</b>' : 'not above'} your pre-procedure photo.</p>` : '<p class="small muted">No usable photo, so tonight is logged without a measurement.</p>'}
 <h3>2. Versus similar patients</h3>${courseSVG(all, e.t)}<p class="small">${B.where}</p><p class="tiny muted">Group: ${group().name} · patients with outcomes: ${group().n}. Range from published data until there are 5 or more.</p>
-<h3>3. Care guide</h3><ul class="guide">${G.map(x => `<li>${x.txt} ${tag(x.k)}<br><span class="tiny muted">Why: ${x.why}</span></li>`).join('')}</ul>
+<h3>3. What to do</h3>
 <div class="brief"><div><b>Sure?</b><span>${B.conf}</span></div><div><b>Do</b><span>${B.todo}</span></div>${B.adapt ? `<div><b>Adapt</b><span>${B.adapt}</span></div>` : ''}</div>
+${briefViz(e, all).replace(/<h3>The course so far<\/h3>[\s\S]*$/, '</div>')}
 ${e.lvl === 'crit' ? '<button data-go="report">Share report with clinic</button>' : ''}</div>
+${careHTML(e)}
 <button class="wide ghost" data-go="today">Done</button>`;
 };
 
@@ -482,11 +558,32 @@ V.report = () => {
 <div class="card"><h2>Report for your clinic</h2><pre id="clin" class="small" style="white-space:pre-wrap;margin:0;font-family:var(--sans)">${esc(clinicText(all))}</pre>
 <button data-act="share">Share with clinic</button></div>
 <div class="card"><h2>Outcome at your visit</h2><p class="small muted">The clinic records this at the day ${D} visit (or later). Then the app checks whether its warnings were right, and the case joins the comparison group.</p>
-${o ? `${o.after ? `<div class="imgs"><figure><img src="${S.clinic.markview}" alt="Before"><figcaption>Before (clinic) <span class="tag real">real case</span></figcaption></figure><figure><img src="${o.after}" alt="After"><figcaption>After (clinic, ${esc(o.when)})</figcaption></figure></div>` : ''}
+${o ? `${o.after ? `<div class="imgs ba"><figure><canvas id="baB" class="photo"></canvas><figcaption>Before (clinic) <span class="tag real">real case</span> <b id="baBn"></b></figcaption></figure><figure><canvas id="baA" class="photo"></canvas><figcaption>After (clinic, ${esc(o.when)}) <b id="baAn"></b></figcaption></figure></div>
+<div class="legend"><span><i style="background:#784614"></i>Browner than this photo's own clear skin, computed live</span><span><i style="border:2px solid #3fbf7f"></i>Clear-skin reference</span></div>` : ''}
 <div class="ro"><b>PIH after healing</b><span>${esc(o.pih)}</span><b>Clinic note</b><span>${esc(o.note || '-')}</span></div>
 ${o.measured ? `<table class="tbl"><tr><th>Measured on clinic photos</th><th>Before</th><th>After</th></tr>${o.measured.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table><p class="tiny muted">Same indices as the app, run on matched cheek areas of the real clinic photos. ${tag('you')}</p>` : ''}
 <h3>Were the app's warnings right?</h3><p class="small">${alerts.length ? `The app raised ${alerts.length} warning${alerts.length > 1 ? 's' : ''} (first on day ${alerts[0].t}). Outcome: ${esc(o.pih)}. ${/^no/i.test(o.pih) ? 'Logged as warnings followed by action and no PIH. With more cases this tells us how many warnings were false alarms.' : 'Logged as a warning that came before the clinic saw it.'}` : `No warnings. Outcome: ${esc(o.pih)}.`}</p>`
       : `<div class="grid2"><label class="f">PIH after healing${sel('oPih', ['No', 'Yes', 'Unclear'])}</label><label class="f">Date<input id="oWhen" type="date" value="${iso(today0())}"></label><label class="f full">Clinic note<input id="oNote"></label></div><button class="ghost" data-act="outcome">Save outcome (clinic)</button>`}</div>`;
+};
+/* colour every brown pixel in the photo against a clear-skin reference circle; returns brown area % */
+function overlayAll(c, normal, th = 5) {
+  const W = c.width, H = c.height, ctx = c.getContext('2d'), img = ctx.getImageData(0, 0, W, H), d = img.data;
+  const rad = Math.round(Math.min(W, H) * .07), nx = Math.round(normal.x * W), ny = Math.round(normal.y * H), MI = [];
+  for (let y = ny - rad; y < ny + rad; y++) for (let x = nx - rad; x < nx + rad; x++) { if (x < 0 || y < 0 || x >= W || y >= H || (x - nx) ** 2 + (y - ny) ** 2 > rad * rad) continue; MI.push(-100 * Math.log10(LUT[d[(y * W + x) * 4]])); }
+  const rM = med(MI); let n = 0, b = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const m = -100 * Math.log10(LUT[d[i]]) - rM; if (m > 40) continue; n++;
+    if (m > th) { b++; d[i] = d[i] * .45 + 120 * .55; d[i + 1] = d[i + 1] * .45 + 70 * .55; d[i + 2] = d[i + 2] * .45 + 20 * .55; }
+  }
+  ctx.putImageData(img, 0, 0); ctx.lineWidth = 2; ctx.strokeStyle = '#3fbf7f'; ctx.beginPath(); ctx.arc(nx, ny, rad, 0, 7); ctx.stroke();
+  return b / Math.max(n, 1) * 100;
+}
+V.report_after = async () => {
+  const o = S.outcome; if (!o?.after || !$('#baB')) return;
+  for (const [id, src, ref] of [['baB', S.clinic.markview, { x: .5, y: .12 }], ['baA', o.after, { x: .72, y: .3 }]]) {
+    const c = toCanvas(await loadImg(src), 400), a = overlayAll(c, ref), cv = $('#' + id); if (!cv) return;
+    cv.width = c.width; cv.height = c.height; cv.getContext('2d').drawImage(c, 0, 0); $('#' + id + 'n').textContent = `· brown ${Math.round(a)}%`;
+  }
 };
 function clinicText(all) {
   const c = S.clinic, p = S.profile, last = all[all.length - 1], al = all.filter(e => e.lvl === 'watch' || e.lvl === 'crit');
@@ -505,20 +602,20 @@ V.more = () => `<div class="card"><h2>Where the numbers come from</h2><div class
 <li><b>Care guide:</b> clinic aftercare plus rules triggered by your profile and tonight's log; each line shows why.</li>
 <li><b>Adapt:</b> checks tonight against yesterday's plan and steps the alert level up or down.</li>
 <li><b>Learn:</b> outcomes recorded at visits update the comparison group.</li></ul></div>
-<div class="card"><button class="ghost" data-act="example">Load example patient</button><button class="ghost" data-act="reset">Erase everything</button></div>
+<div class="card">${isEx() ? '<button data-act="exitExample">Exit example, back to my app</button>' : '<button class="ghost" data-act="example">Open example patient (demo, does not touch my data)</button><button class="ghost" data-act="reset">Erase my data</button>'}</div>
 <button class="wide ghost" data-go="${S.clinic ? 'today' : 'welcome'}">Back</button>`;
 
 /* ---------- example patient: real clinic photos, simulated nightly check-ins ---------- */
 function loadExample(daysIn) {
   const start = addDays(iso(today0()), -(+daysIn > 0 ? +daysIn : 9));
-  S = blank(); S.example = true; S.consent = true;
+  S = blank(); S.example = true; S.consent = true; // in memory only; MY is untouched
   S.profile = { name: 'Example patient', age: '40s', sex: 'male', nation: 'Korea', eth: 'East Asian', job: 'mixed', prior: 'no', selfType: 'Combination' };
   S.habits = { sun: '1', outdoor: '1', workout: '2', sauna: '1', drinks: '3-6', sleepH: '6', hat: 'Rarely', makeup: 'No', actives: ['none'] };
   S.baseline = { m: { dEI: 1.2, dMI: 3.0 }, sim: true };
   S.clinic = {
     example: true, name: 'Example clinic', date: start, kind: 'toning', visitDay: 14, session: '1 of a planned course',
     dx: 'Freckles and lentigines, both cheeks', fitz: 'III (example data)',
-    rows: [{ name: 'Pico toning (PicoPlus)', medium: 'Nd:YAG', wl: '1064 nm', pulse: 'Picosecond', spot: '8 mm', fluence: '0.85 J/cm²', rate: '10 Hz', energy: '427 mJ', shots: '-' }],
+    rows: [{ name: 'Pico toning (PicoPlus)', medium: 'Nd:YAG', wl: '1064 nm', pulse: 'Picosecond', spot: '8 mm', fluence: '0.85 J/cm²', rate: '10 Hz', energy: '427 mJ', shots: '2000' }],
     settingsNote: 'Example data: settings from the real course, shown here as one session. Pulse energy = fluence × spot area (8 mm round spot = 0.50 cm²).',
     notes: 'The real case had about 5 sessions of this setting, 2 weeks apart.',
     markview: 'assets/case_before.jpg'
@@ -535,7 +632,11 @@ function loadExample(daysIn) {
     pih: 'No new PIH. Pigment lighter than before the course', when: 'later visit, after the full course', note: 'Pink macules at the later visit, likely from a recent session', after: 'assets/case_after.jpg',
     measured: [['Brown area, left cheek', '39.7%', '27.2%'], ['Brown depth, left', '8.57', '6.14'], ['Brown area, right cheek', '51.4%', '37.4%'], ['Brown depth, right', '10.51', '6.92'], ['Red area, right', '14.3%', '19.0%']]
   };
-  S.step = 'today'; save(); render(); scrollTo(0, 0);
+  S.step = 'today'; render(); scrollTo(0, 0);
+}
+function exitExample() {
+  S = MY; if (location.search) history.replaceState(null, '', location.pathname);
+  S.step = myHome(); render(); scrollTo(0, 0);
 }
 
 /* ---------- actions ---------- */
@@ -545,7 +646,9 @@ const scaleV = id => +($(`[data-scale="${id}"] [aria-pressed="true"]`)?.dataset.
 const strip = a => ({ dEI: a.dEI, dMI: a.dMI, redA: a.redA, brownA: a.brownA, watch: a.watch });
 const ACT = {
   example: () => loadExample(),
-  reset() { S = blank(); save(); go('welcome'); },
+  example14: () => loadExample(14),
+  exitExample,
+  reset() { if (!confirmErase()) return; MY = blank(); S = MY; save(); go('welcome'); },
   consentNext() { if (!$('#consent').checked) return toast('Please agree to continue'); S.consent = true; go('p1'); },
   p1() {
     S.profile = { name: val('name'), age: val('age'), sex: val('sex'), nation: val('nation'), eth: val('eth'), job: val('job'), prior: val('prior'), priorWhat: val('priorWhat'),
@@ -559,7 +662,7 @@ const ACT = {
   skipBase() { go('connect'); },
   link() {
     S.clinic = { name: 'Example clinic', date: iso(today0()), kind: 'toning', visitDay: 14, session: '1', dx: 'Entered by the clinic', fitz: 'entered by the clinic',
-      rows: [{ name: 'Pico toning', medium: 'Nd:YAG', wl: '1064 nm', pulse: 'Picosecond', spot: 'clinic', fluence: 'clinic', rate: 'clinic', energy: 'clinic', shots: 'clinic' }], notes: 'Demo link. In use, these come from the clinic chart.', markview: 'assets/case_before.jpg', example: true };
+      rows: [{ name: 'Pico toning', medium: 'Nd:YAG', wl: '1064 nm', pulse: 'Picosecond', spot: 'from clinic', fluence: 'from clinic', rate: 'from clinic', energy: 'from clinic', shots: 'from clinic' }], notes: 'Demo link. In use, the settings and the pre-treatment photo come from the clinic chart.', markview: null };
     go('proc');
   },
   saveCheck() {
@@ -590,6 +693,8 @@ document.addEventListener('click', e => {
   const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) { e.preventDefault(); ACT[a.dataset.act](); }
 });
 $('#moreBtn').onclick = () => go('more');
+$('#homeBtn').onclick = () => isEx() ? exitExample() : go(myHome());
+function confirmErase() { const b = $('[data-act="reset"]'); if (b && b.dataset.sure) return true; if (b) { b.dataset.sure = 1; b.textContent = 'Tap again to erase my data'; } return false; }
 // ?example opens the example patient; ?view=<screen> jumps to a screen (for demos)
 const Q = new URLSearchParams(location.search);
 if (Q.has('example')) loadExample(Q.get('example')); // ?example=14 opens the visit day
