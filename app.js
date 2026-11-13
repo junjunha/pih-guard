@@ -559,29 +559,27 @@ V.report = () => {
 <button data-act="share">Share with clinic</button></div>
 <div class="card"><h2>Outcome at your visit</h2><p class="small muted">The clinic records this at the day ${D} visit (or later). Then the app checks whether its warnings were right, and the case joins the comparison group.</p>
 ${o ? `${o.after ? `<div class="imgs ba"><figure><canvas id="baB" class="photo"></canvas><figcaption>Before (clinic) <span class="tag real">real case</span> <b id="baBn"></b></figcaption></figure><figure><canvas id="baA" class="photo"></canvas><figcaption>After (clinic, ${esc(o.when)}) <b id="baAn"></b></figcaption></figure></div>
-<div class="legend"><span><i style="background:#784614"></i>Browner than this photo's own clear skin, computed live</span><span><i style="border:2px solid #3fbf7f"></i>Clear-skin reference</span></div>` : ''}
+<div class="legend"><span><i style="background:#784614"></i>Browner than this photo's own clear skin (brighter half), computed live in your browser</span></div>` : ''}
 <div class="ro"><b>PIH after healing</b><span>${esc(o.pih)}</span><b>Clinic note</b><span>${esc(o.note || '-')}</span></div>
 ${o.measured ? `<table class="tbl"><tr><th>Measured on clinic photos</th><th>Before</th><th>After</th></tr>${o.measured.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table><p class="tiny muted">Same indices as the app, run on matched cheek areas of the real clinic photos. ${tag('you')}</p>` : ''}
 <h3>Were the app's warnings right?</h3><p class="small">${alerts.length ? `The app raised ${alerts.length} warning${alerts.length > 1 ? 's' : ''} (first on day ${alerts[0].t}). Outcome: ${esc(o.pih)}. ${/^no/i.test(o.pih) ? 'Logged as warnings followed by action and no PIH. With more cases this tells us how many warnings were false alarms.' : 'Logged as a warning that came before the clinic saw it.'}` : `No warnings. Outcome: ${esc(o.pih)}.`}</p>`
       : `<div class="grid2"><label class="f">PIH after healing${sel('oPih', ['No', 'Yes', 'Unclear'])}</label><label class="f">Date<input id="oWhen" type="date" value="${iso(today0())}"></label><label class="f full">Clinic note<input id="oNote"></label></div><button class="ghost" data-act="outcome">Save outcome (clinic)</button>`}</div>`;
 };
-/* colour every brown pixel in the photo against a clear-skin reference circle; returns brown area % */
-function overlayAll(c, normal, th = 5) {
-  const W = c.width, H = c.height, ctx = c.getContext('2d'), img = ctx.getImageData(0, 0, W, H), d = img.data;
-  const rad = Math.round(Math.min(W, H) * .07), nx = Math.round(normal.x * W), ny = Math.round(normal.y * H), MI = [];
-  for (let y = ny - rad; y < ny + rad; y++) for (let x = nx - rad; x < nx + rad; x++) { if (x < 0 || y < 0 || x >= W || y >= H || (x - nx) ** 2 + (y - ny) ** 2 > rad * rad) continue; MI.push(-100 * Math.log10(LUT[d[(y * W + x) * 4]])); }
-  const rM = med(MI); let n = 0, b = 0;
+/* colour every brown pixel against this photo's own clear skin (median of the brighter half); returns brown area % */
+function overlayAll(c, th = 8) {
+  const W = c.width, H = c.height, ctx = c.getContext('2d'), img = ctx.getImageData(0, 0, W, H), d = img.data, M = [];
+  for (let i = 0; i < d.length; i += 4) M.push(-100 * Math.log10(LUT[d[i]]));
+  const rM = [...M].sort((p, q) => p - q)[Math.floor(M.length / 4)]; let n = 0, b = 0;
   for (let i = 0; i < d.length; i += 4) {
-    const m = -100 * Math.log10(LUT[d[i]]) - rM; if (m > 40) continue; n++;
+    const m = M[i / 4] - rM; if (m > 40) continue; n++;
     if (m > th) { b++; d[i] = d[i] * .45 + 120 * .55; d[i + 1] = d[i + 1] * .45 + 70 * .55; d[i + 2] = d[i + 2] * .45 + 20 * .55; }
   }
-  ctx.putImageData(img, 0, 0); ctx.lineWidth = 2; ctx.strokeStyle = '#3fbf7f'; ctx.beginPath(); ctx.arc(nx, ny, rad, 0, 7); ctx.stroke();
-  return b / Math.max(n, 1) * 100;
+  ctx.putImageData(img, 0, 0); return b / Math.max(n, 1) * 100;
 }
 V.report_after = async () => {
   const o = S.outcome; if (!o?.after || !$('#baB')) return;
-  for (const [id, src, ref] of [['baB', S.clinic.markview, { x: .5, y: .12 }], ['baA', o.after, { x: .72, y: .3 }]]) {
-    const c = toCanvas(await loadImg(src), 400), a = overlayAll(c, ref), cv = $('#' + id); if (!cv) return;
+  for (const [id, src] of [['baB', S.clinic.markview], ['baA', o.after]]) {
+    const c = toCanvas(await loadImg(src), 400), a = overlayAll(c), cv = $('#' + id); if (!cv) return;
     cv.width = c.width; cv.height = c.height; cv.getContext('2d').drawImage(c, 0, 0); $('#' + id + 'n').textContent = `· brown ${Math.round(a)}%`;
   }
 };
