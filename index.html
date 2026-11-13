@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache">
-<meta name="theme-color" content="#1d5c6e">
+<meta name="theme-color" content="#f7f9f9">
 <title>PIH Guard</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -12,11 +12,9 @@
 @font-face{font-family:"Pretendard";src:url("fonts/Pretendard-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
 @font-face{font-family:"Pretendard";src:url("fonts/Pretendard-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
 @font-face{font-family:"Pretendard";src:url("fonts/Pretendard-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
-:root{--bg:#f3f5f5;--surface:#fff;--ink:#1b2326;--muted:#62707a;--line:#dde2e5;--soft:#eef1f2;--band:#e2e8ea;
+:root{color-scheme:light;--bg:#f7f9f9;--surface:#fff;--ink:#1b2326;--muted:#66737c;--line:#e4e8ea;--soft:#f0f3f4;--band:#e3ecee;
 --accent:#1d5c6e;--red:#c2455a;--brown:#8b5a3a;--ok:#2f7d55;--warn:#b06d12;--crit:#b23a48;
 --sans:"Pretendard",-apple-system,"Segoe UI",system-ui,sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#111618;--surface:#1a2124;--ink:#e6ebed;--muted:#93a1a9;--line:#2c363a;--soft:#20292c;--band:#28333a;
---accent:#6fb3c6;--red:#e27586;--brown:#c99470;--ok:#6cc095;--warn:#e0a24a;--crit:#e57a86;color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
@@ -67,7 +65,6 @@ svg text{font-family:var(--sans)}
 .log .d{color:var(--muted);font-variant-numeric:tabular-nums}
 .log .k{font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:2px}
 .k.sense{color:#3a68ad}.k.interpret{color:var(--warn)}.k.intervene{color:var(--red)}.k.adapt{color:var(--ok)}
-@media (prefers-color-scheme:dark){.k.sense{color:#7fa4e0}}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
 nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;width:100%}
 nav.tabs button{background:none;color:var(--muted);border-radius:0;padding:10px 4px 12px;font-size:.74rem;display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -119,11 +116,13 @@ details summary{cursor:pointer}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .menu{position:absolute;right:0}
+.dash{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.dash li{padding-left:14px;position:relative}.dash li::before{content:"-";position:absolute;left:0;color:var(--muted)}
+.card{box-shadow:0 1px 2px rgba(20,40,50,.04)}
 .linkish{background:none;color:var(--accent);padding:0;font-weight:600}
 header.top .brand{background:none;color:var(--ink);padding:4px 0;border-radius:8px}
 /* example mode: orange bar + orange frame so it never looks like your own data */
 :root{--ex:#c76a12}
-@media (prefers-color-scheme:dark){:root{--ex:#e8953f}}
 #exBanner{position:sticky;top:0;z-index:6;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--ex);color:#fff;border:0;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.8rem}
 #exBanner div{display:flex;flex-direction:column;gap:2px}#exBanner b{font-size:.9rem}#exBanner span{opacity:.92}
 #exBanner button{background:#fff;color:var(--ex);flex:none;padding:9px 12px;font-size:.85rem}
@@ -164,6 +163,6 @@ details.care ul{margin-top:8px}
   <button data-go="course"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Course</button>
   <button data-go="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Report</button>
 </div></nav>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

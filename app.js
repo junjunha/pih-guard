@@ -89,24 +89,10 @@ function analyze(c, watch, normal) {
   if (sharp < 4) issues.push('Looks blurry. Hold still and tap to focus.');
   return { dEI: sE / n, dMI: sM / n, redA: red / n * 100, brownA: brown / n * 100, lum: rL, sharp, issues, rad, watch, normal };
 }
-/* colour the pixels that differ from normal skin, only around the marked spot */
+/* mark only where was measured; the skin itself is left uncoloured so the redness stays visible */
 function overlay(c, a) {
-  const W = c.width, H = c.height, ctx = c.getContext('2d'), img = ctx.getImageData(0, 0, W, H), d = img.data;
+  const W = c.width, H = c.height, ctx = c.getContext('2d');
   const wx = Math.round(a.watch.x * W), wy = Math.round(a.watch.y * H), nx = Math.round(a.normal.x * W), ny = Math.round(a.normal.y * H), rr = Math.round(a.rad * 2.2);
-  const MI = [], EI = [];
-  for (let y = ny - a.rad; y < ny + a.rad; y++) for (let x = nx - a.rad; x < nx + a.rad; x++) { if (x < 0 || y < 0 || x >= W || y >= H || (x - nx) ** 2 + (y - ny) ** 2 > a.rad ** 2) continue; const i = (y * W + x) * 4; MI.push(-100 * Math.log10(LUT[d[i]])); EI.push(100 * Math.log10(LUT[d[i]] / LUT[d[i + 1]])); }
-  const rM = med(MI), rE = med(EI);
-  for (let y = Math.max(0, wy - rr); y < Math.min(H, wy + rr); y++) for (let x = Math.max(0, wx - rr); x < Math.min(W, wx + rr); x++) {
-    if ((x - wx) ** 2 + (y - wy) ** 2 > rr * rr) continue;
-    const i = (y * W + x) * 4, R = LUT[d[i]], G = LUT[d[i + 1]];
-    const e = 100 * Math.log10(R / G) - rE, m = -100 * Math.log10(R) - rM;
-    if (m > 40) continue; // hair, shadow
-    const isR = e > TH.red * 2, isB = m > TH.brown * 1.5;
-    if (!isR && !isB) continue;
-    const col = isR && isB ? [150, 40, 120] : isR ? [235, 50, 70] : [120, 70, 20];
-    d[i] = d[i] * .45 + col[0] * .55; d[i + 1] = d[i + 1] * .45 + col[1] * .55; d[i + 2] = d[i + 2] * .45 + col[2] * .55;
-  }
-  ctx.putImageData(img, 0, 0);
   ctx.lineWidth = Math.max(2, W / 250);
   ctx.strokeStyle = '#fff'; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.arc(wx, wy, rr, 0, 7); ctx.stroke();
   ctx.setLineDash([]); ctx.strokeStyle = '#3fbf7f'; ctx.beginPath(); ctx.arc(nx, ny, a.rad, 0, 7); ctx.stroke();
@@ -222,10 +208,10 @@ V.welcome = () => `
 <div class="hero"><img src="icon.svg" width="64" height="64" alt=""><h1>PIH Guard</h1>
 <p class="muted">Catch dark marks after skin procedures early, while there is still time to act.</p></div>
 <div class="card path"><span class="sec">My app</span><h2>Use PIH Guard for my own procedure</h2>
-<p class="small">Set this up <b>before</b> your procedure. Your clinic sends the treatment details. Each night you take one flash photo and do a 30-second check. The app tells you where you are in the healing course, what to change in daily care, and when to contact your clinic.</p>
+<ul class="dash small"><li>Set it up <b>before</b> your procedure</li><li>Your clinic sends the treatment details</li><li>Each night: one flash photo and a 30-second check</li><li>The app shows where you are in the healing course</li><li>What to change in daily care, and when to contact your clinic</li></ul>
 <button data-go="guide">${MY.consent ? 'Continue my setup' : 'Get started'}</button></div>
 <div class="card path expath"><span class="sec">Demo</span><h2>See an example patient</h2>
-<p class="small">A filled-in course: real clinic photos from one consented case, with simulated nightly check-ins. Opens in demo mode with an orange bar; your own data is not touched. Tap <b>Exit to my app</b> or the logo to come back here.</p>
+<ul class="dash small"><li>A full course, already filled in</li><li>Real clinic photos from one consented case</li><li>Nightly check-ins are simulated</li><li>Opens with an orange bar; your own data is not touched</li><li>Tap <b>Exit to my app</b> or the logo to come back</li></ul>
 <div class="imgs ba"><figure><img src="assets/case_before.jpg" alt="Before"><figcaption>Before the course</figcaption></figure><figure><img src="assets/case_after.jpg" alt="After"><figcaption>After the course</figcaption></figure></div>
 <div class="row navrow"><button class="exbtn" data-act="example">Day 9 (mid-course)</button><button class="exbtn ghost" data-act="example14">Day 14 (visit)</button></div></div>`;
 
@@ -238,7 +224,7 @@ V.guide = () => `
 </div></div>
 <div class="card"><h2>What you get back</h2><p class="small muted">Below is a live analysis of a real photo of post-inflammatory hyperpigmentation (consented, cropped). The numbers are computed in your browser right now.</p>
 <canvas id="exCanvas" class="photo"></canvas>
-<div class="legend"><span><i style="background:#eb3246"></i>Redder than normal skin</span><span><i style="background:#784614"></i>Browner</span><span><i style="background:#962878"></i>Both</span><span><i style="border:2px solid #3fbf7f"></i>Normal skin reference</span></div>
+<div class="legend"><span><i style="border:2px dashed var(--muted)"></i>Spot being measured</span><span><i style="border:2px solid #3fbf7f"></i>Normal skin reference</span></div>
 <div id="exNums" class="kv"></div>
 <div class="brief" id="exBrief"></div>
 </div>
