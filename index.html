@@ -30,6 +30,7 @@ h3{font-size:.9rem;margin:0}
 p{margin:0}
 .muted{color:var(--muted)} .small{font-size:.85rem} .tiny{font-size:.75rem}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.row{flex-wrap:nowrap;align-items:flex-start}
 .between{justify-content:space-between}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em}
 .pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
@@ -83,148 +84,59 @@ button.wide{width:100%;margin-top:8px;padding:14px}
 details summary{cursor:pointer}
 .done-mark{display:flex;gap:10px;align-items:center}
 .alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+.tag{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--muted);vertical-align:middle;white-space:nowrap}
+.tag.lit{background:color-mix(in srgb,#3a68ad 14%,transparent);color:#3a68ad}
+.tag.weak{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.tag.clinic{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.tag.sim{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+.tag.real{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.banner{font-size:.8rem;border-radius:10px;padding:9px 12px;background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 35%,var(--line))}
+.ro{display:grid;grid-template-columns:118px 1fr;gap:6px 10px;font-size:.88rem}
+.ro b{color:var(--muted);font-weight:600;font-size:.8rem}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.tbl th,.tbl td{text-align:left;padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}
+.tbl th{color:var(--muted);font-weight:600}
+.scroll{overflow-x:auto}
+.imgs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.imgs figure{margin:0}.imgs img{width:100%;border-radius:10px;display:block}
+.imgs figcaption{font-size:.72rem;color:var(--muted);margin-top:3px}
+.brief{display:flex;flex-direction:column;gap:8px}
+.brief div{display:grid;grid-template-columns:74px 1fr;gap:8px;font-size:.9rem}
+.brief>div>b{font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.guide li{margin:0 0 7px;font-size:.88rem}
+.guide{padding-left:18px;margin:0}
+.scale{display:flex;gap:6px}.scale button{flex:1;padding:7px 0;font-size:.82rem;background:var(--soft);color:var(--ink);border-radius:9px}
+.scale button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.tl{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
+.tl span{height:26px;border-radius:5px;background:var(--soft);font-size:.62rem;display:grid;place-items:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.tl span.ok{background:color-mix(in srgb,var(--ok) 30%,transparent);color:var(--ink)}
+.tl span.watch{background:color-mix(in srgb,var(--warn) 35%,transparent);color:var(--ink)}
+.tl span.crit{background:color-mix(in srgb,var(--crit) 40%,transparent);color:var(--ink)}
+.tl span.hold{background:repeating-linear-gradient(45deg,var(--soft),var(--soft) 3px,var(--line) 3px,var(--line) 6px)}
+.tl span.now{outline:2px solid var(--accent)}
+.tl span.visit{border:2px dashed var(--accent)}
+.prog{height:4px;background:var(--soft);border-radius:4px;overflow:hidden}.prog i{display:block;height:100%;background:var(--accent)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.menu{position:absolute;right:0}
+.linkish{background:none;color:var(--accent);padding:0;font-weight:600}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
     <div class="brand"><img src="icon.svg" width="26" height="26" alt="">PIH Guard</div>
-    <div class="who" id="who"></div>
+    <div class="row"><span class="who" id="who"></span><button class="small ghost" id="moreBtn" aria-label="More">More</button></div>
   </header>
-
-  <!-- WELCOME -->
-  <section id="v-welcome" data-view data-onb hidden>
-    <div class="hero">
-      <img src="icon.svg" width="56" height="56" alt="">
-      <h1>PIH Guard</h1>
-      <p class="muted">Catches dark marks early after laser, peel or RF microneedling.</p>
-    </div>
-    <div class="card">
-      <div class="steps">
-        <div class="step on"><i>1</i><span><b>The clinic sets up your procedure.</b> Skin type, device and settings, filled in at the visit.</span></div>
-        <div class="step on"><i>2</i><span><b>You take one flash photo each night.</b> Lights off, about 40 seconds.</span></div>
-        <div class="step on"><i>3</i><span><b>If healing drifts, the app steps in.</b> It tells you what to do, checks every day if it works, and lets the clinic know.</span></div>
-      </div>
-    </div>
-    <button class="wide" id="w-new">Set up a new patient</button>
-    <button class="wide ghost" id="w-demo">See a sample patient (day 15)</button>
-    <p class="note" style="margin-top:14px">Concept for the Stanford AI Longevity Module 2 discussion. Readings are uncalibrated and the forecast is a teaching model. Not a medical device.</p>
-  </section>
-
-  <!-- SETUP (clinic) -->
-  <section id="v-setup" data-view data-onb hidden>
-    <p class="tiny muted stepno">Step 1 of 2 · At the clinic</p>
-    <div class="card">
-      <h2>Patient and procedure</h2>
-      <p class="small muted">Filled in by the clinic at the visit. The patient doesn't need to know the device or settings.</p>
-      <div id="setupForm"></div>
-    </div>
-    <div class="row navrow"><button class="ghost" id="s-back">Back</button><button id="s-next">Continue</button></div>
-  </section>
-
-  <!-- HOW-TO (patient) -->
-  <section id="v-howto" data-view data-onb hidden>
-    <p class="tiny muted stepno">Step 2 of 2 · At home</p>
-    <div class="card">
-      <h2>Your nightly photo</h2>
-      <p class="small muted">Same light every night is what makes the numbers comparable.</p>
-      <div class="steps">
-        <div class="step on"><i>1</i><span>Turn off the lights.</span></div>
-        <div class="step on"><i>2</i><span>Flash on. Hold the phone about 30 cm away, same angle each night.</span></div>
-        <div class="step on"><i>3</i><span>Tap the treated spot, then normal skin next to it. That's it.</span></div>
-      </div>
-      <p class="tiny muted">Photos stay on this phone. Only the numbers are saved.</p>
-    </div>
-    <div class="row navrow"><button class="ghost" id="h-back">Back</button><button id="h-go">Take the first photo</button></div>
-    <button class="wide ghost" id="h-later" style="margin-top:8px">Later</button>
-  </section>
-
-  <!-- TODAY -->
-  <section id="v-today" data-view hidden>
-    <div class="card" id="tonightCard"></div>
-    <div class="card" id="statusCard"></div>
-    <div class="card" id="doCard"></div>
-  </section>
-
-  <!-- CHECK-IN -->
-  <section id="v-check" data-view hidden>
-    <div class="card">
-      <div class="row between"><h2 id="ciTitle">Tonight's check-in</h2><span class="tiny muted">Photos stay on this phone. Only the numbers are saved.</span></div>
-      <div class="steps" id="ciSteps">
-        <div class="step" data-s="1"><i>1</i><span>Turn off the lights and take a photo with the flash.</span></div>
-        <div class="step" data-s="2"><i>2</i><span>Tap the treated area.</span></div>
-        <div class="step" data-s="3"><i>3</i><span>Tap untreated skin nearby (same light).</span></div>
-      </div>
-      <label class="btn" for="cam" id="camBtn">Take or choose photo</label>
-      <input id="cam" type="file" accept="image/*" capture="user" hidden>
-      <canvas class="photo" id="photo" hidden></canvas>
-      <div class="row" id="tapRow" hidden><button class="small ghost" id="retap">Re-tap spots</button><span class="small muted" id="tapHint"></span></div>
-      <div class="kv" id="measure" hidden style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
-    </div>
-    <div class="card">
-      <h3>Anything today?</h3>
-      <div class="chips" id="taps">
-        <button class="chip" data-t="sting" aria-pressed="false">Stinging</button>
-        <button class="chip" data-t="itch" aria-pressed="false">Itchy</button>
-        <button class="chip" data-t="pick" aria-pressed="false">Picked a crust</button>
-        <button class="chip" data-t="sunscreen" aria-pressed="false">Reapplied sunscreen</button>
-        <button class="chip" data-t="sun" aria-pressed="false">Long time in the sun</button>
-      </div>
-      <details class="tiny muted"><summary>Logging a different day?</summary><label class="f" style="margin-top:6px">Day after the procedure<input id="ciDay" type="number" min="0" max="56"></label></details>
-      <button id="saveCheck" disabled>Save tonight's check-in</button>
-    </div>
-  </section>
-
-  <!-- PROGRESS -->
-  <section id="v-progress" data-view hidden>
-    <div class="card">
-      <div class="row between"><h2>Healing course</h2><span class="tiny muted" id="progSub"></span></div>
-      <svg id="chart" viewBox="0 0 520 430" width="100%" role="img" aria-label="Redness and brown readings against the normal course"></svg>
-      <div class="row tiny muted" style="gap:14px">
-        <span><svg width="18" height="8"><rect width="18" height="8" fill="var(--band)"/></svg> Normal course</span>
-        <span><svg width="18" height="8"><rect width="18" height="8" fill="var(--line)"/></svg> Crust window</span>
-        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="var(--brown)" stroke-dasharray="2 3"/></svg> Visible to the eye</span>
-      </div>
-    </div>
-    <div class="card">
-      <h2>What the loop did</h2>
-      <div class="log" id="log"></div>
-    </div>
-  </section>
-
-  <!-- CLINIC -->
-  <section id="v-clinic" data-view hidden>
-    <div class="card" id="alertCard"></div>
-    <div class="card">
-      <div class="row between"><h2>Patient and procedure</h2><span class="tiny muted">Clinic only. Not shown to the patient.</span></div>
-      <div id="clinicForm"></div>
-    </div>
-    <div class="card">
-      <div class="row between"><h2>Actions by signal</h2><span class="tiny muted">Examples. Each clinic sets its own.</span></div>
-      <p class="small muted">The app picks the action that matches what went off course, then checks every day, on the last two days' trend, whether it is working for this patient. As records pile up (habits, settings, skin type), these defaults can be tuned from the clinic's own results.</p>
-      <label class="f">Redness fading slowly<textarea id="p-redness"></textarea></label>
-      <label class="f">Brown rising after the crust<textarea id="p-brown"></textarea></label>
-      <label class="f">Picked a crust<textarea id="p-crust"></textarea></label>
-      <label class="f">Sun exposure (dose follows the UV forecast)<textarea id="p-sun"></textarea></label>
-      <label class="f">If home steps don't work · clinic<textarea id="p-clinic"></textarea></label>
-      <label class="f">If that doesn't work · clinician<textarea id="p-doctor"></textarea></label>
-      <label class="f">Next session when PIH was flagged<select id="p-hold"><option value="hold">Hold until brown is back in the normal band</option><option value="advise">Advise waiting, clinician decides</option></select></label>
-    </div>
-    <div class="card">
-      <h2>Demo</h2>
-      <p class="small muted">Check-ins you add are kept on this device.</p>
-      <div class="row"><button class="small ghost" id="restart">Back to start screen</button></div>
-      <p class="note">Concept for the Stanford AI Longevity Module 2 discussion. Readings are uncalibrated and the forecast is a teaching model. Not a medical device.</p>
-    </div>
-  </section>
+  <div id="exBanner" class="banner" hidden></div>
+  <main id="view"></main>
 </div>
-
-<nav class="tabs" id="tabs"><div class="in">
-  <button data-go="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
+<nav class="tabs" id="tabs" hidden><div class="in">
+  <button data-go="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
   <button data-go="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>Check-in</button>
-  <button data-go="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Progress</button>
-  <button data-go="clinic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Clinic</button>
+  <button data-go="course"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Course</button>
+  <button data-go="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Report</button>
 </div></nav>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
