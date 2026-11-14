@@ -206,7 +206,7 @@ function render() {
 
 V.welcome = () => `
 <div class="hero"><img src="icon.svg" width="64" height="64" alt=""><h1>PIH Guard</h1>
-<p class="muted">Catch dark marks after skin procedures early, while there is still time to act.</p></div>
+<p class="muted" style="text-align:center">Catch dark marks after skin procedures early,<br>while there is still time to act.</p></div>
 <div class="card path"><span class="sec">My app</span><h2>Use PIH Guard for my own procedure</h2>
 <ul class="dash small"><li>Set it up <b>before</b> your procedure</li><li>Your clinic sends the treatment details</li><li>Each night: one flash photo and a 30-second check</li><li>The app shows where you are in the healing course</li><li>What to change in daily care, and when to contact your clinic</li></ul>
 <button data-go="guide">${MY.consent ? 'Continue my setup' : 'Get started'}</button></div>
